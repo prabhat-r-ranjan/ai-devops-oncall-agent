@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from app.api.analyze import router as analyze_router
 
 app = FastAPI(
     title="AI DevOps On-Call Agent",
@@ -9,23 +10,12 @@ app = FastAPI(
 
 @app.get("/")
 def root():
-    return {
-        "message": "AI DevOps On-Call Agent is running"
-    }
+    return {"message": "AI DevOps On-Call Agent is running"}
 
 
 @app.get("/health")
 def health():
-    return {
-        "status": "UP",
-        "service": "ai-devops-oncall-agent"
-    }
+    return {"status": "UP", "service": "ai-devops-oncall-agent"}
 
 
-@app.post("/analyze")
-def analyze():
-    return {
-        "summary": "MVP is working",
-        "probableRootCause": "No issue detected",
-        "confidence": 100
-    }
+app.include_router(analyze_router)
