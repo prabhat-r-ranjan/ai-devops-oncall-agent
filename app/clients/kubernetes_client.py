@@ -9,6 +9,21 @@ class KubernetesClient:
         self.core_api = client.CoreV1Api()
         self.apps_api = client.AppsV1Api()
 
+    def collect_diagnostics(
+        self,
+        namespace: str,
+        deployment_name: str,
+        service_name: str | None = None
+    ) -> dict:
+        diagnostics = self.get_deployment_diagnostics(
+            namespace=namespace,
+            deployment_name=deployment_name
+        )
+
+        diagnostics["service_name"] = service_name
+
+        return diagnostics
+
     def _load_config(self):
         try:
             config.load_incluster_config()
@@ -30,10 +45,10 @@ class KubernetesClient:
                 "namespace": namespace,
                 "deployment_name": deployment_name,
                 "deployment_status": {
-                    "replicas": deployment.status.replicas,
-                    "ready_replicas": deployment.status.ready_replicas,
-                    "available_replicas": deployment.status.available_replicas,
-                    "updated_replicas": deployment.status.updated_replicas,
+                    "replicas": deployment.status.replicas or 0,
+                    "ready_replicas": deployment.status.ready_replicas or 0,
+                    "available_replicas": deployment.status.available_replicas or 0,
+                    "updated_replicas": deployment.status.updated_replicas or 0,
                 },
                 "pods": pods,
                 "events": events,
@@ -55,7 +70,7 @@ class KubernetesClient:
             }
 
     def _get_pods_for_deployment(self, namespace: str, deployment) -> list:
-        selector = deployment.spec.selector.match_labels
+        selector = deployment.spec.selector.match_labels or {}
 
         label_selector = ",".join(
             [f"{key}={value}" for key, value in selector.items()]
@@ -72,7 +87,8 @@ class KubernetesClient:
             container_statuses = pod.status.container_statuses or []
 
             restart_count = sum(
-                container.restart_count for container in container_statuses
+                container.restart_count or 0
+                for container in container_statuses
             )
 
             ready = (
@@ -138,7 +154,6 @@ class KubernetesClient:
                 if isinstance(pod_log, str) and pod_log.startswith("b'"):
                     pod_log = pod_log[2:-1]
                     pod_log = pod_log.encode("utf-8").decode("unicode_escape")
-
 
                 logs.append({
                     "pod_name": pod_name,
