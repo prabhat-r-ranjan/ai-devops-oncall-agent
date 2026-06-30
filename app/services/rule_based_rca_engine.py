@@ -31,6 +31,7 @@ class RuleBasedRcaEngine:
             )
 
         issues = self._detect_issues(diagnostics)
+        issues = self._filter_stale_issues(issues, diagnostics)
         issues = self._prioritize_issues(issues)
 
         if not issues:
@@ -91,7 +92,7 @@ class RuleBasedRcaEngine:
             ]
 
         return []
-
+    
     def _check_pod_health(self, diagnostics: Dict[str, Any]) -> List[DetectedIssue]:
         issues = []
         pods = diagnostics.get("pods") or []
@@ -563,3 +564,40 @@ class RuleBasedRcaEngine:
                 result.append(item)
 
         return result
+    def _filter_stale_issues(
+        self,
+        issues: List[DetectedIssue],
+        diagnostics: Dict[str, Any],
+    ) -> List[DetectedIssue]:
+        deployment_status = diagnostics.get("deployment_status") or {}
+        pods = diagnostics.get("pods") or []
+
+        replicas = deployment_status.get("replicas") or 0
+        ready_replicas = deployment_status.get("ready_replicas") or 0
+
+        deployment_healthy = replicas > 0 and replicas == ready_replicas
+
+        pods_healthy = bool(pods) and all(
+            pod.get("phase") == "Running" and pod.get("ready") is True
+            for pod in pods
+        )
+
+        if not deployment_healthy or not pods_healthy:
+            return issues
+
+        stale_issue_types = {
+            "IMAGE_PULL_BACKOFF",
+            "CRASH_LOOP_BACKOFF",
+            "OOM_KILLED",
+            "PROBE_FAILURE",
+            "SCHEDULING_FAILURE",
+            "NODE_FAILURE",
+            "PVC_FAILURE",
+            "WARNING_EVENTS",
+        }
+
+        return [
+            issue
+            for issue in issues
+            if issue.issue_type not in stale_issue_types
+        ]
