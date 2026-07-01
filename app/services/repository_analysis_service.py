@@ -19,21 +19,9 @@ class RepositoryAnalysisService:
     """
 
     def __init__(self):
-        """
-        Initialize GitHub client.
-        """
         self.github_client = GitHubClient()
 
     def analyze_fix_plan(self, fix_plan: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Analyze repository based on FixPlan.
-
-        Steps:
-        1. Check GitHub configuration.
-        2. Check whether FixPlan has target_file.
-        3. Read target file from GitHub.
-        4. Return repository analysis result.
-        """
         if not self.github_client.is_configured():
             return {
                 "enabled": False,
@@ -62,6 +50,8 @@ class RepositoryAnalysisService:
                 "files_checked": [target_file],
             }
 
+        file_content = file_result.get("content", "")
+
         return {
             "enabled": True,
             "status": "TARGET_FILE_FOUND",
@@ -69,5 +59,6 @@ class RepositoryAnalysisService:
             "files_checked": [target_file],
             "target_file": target_file,
             "file_sha": file_result.get("sha"),
-            "preview": file_result.get("content", "")[:500],
+            "content": file_content,
+            "preview": file_content[:500],
         }
