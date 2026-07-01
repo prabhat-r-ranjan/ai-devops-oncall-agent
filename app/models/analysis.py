@@ -1,22 +1,24 @@
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 
 
 class AnalyzeRequest(BaseModel):
-    incident_id: int
+    incident_id: str
     title: str
     description: str
     severity: str
-    namespace: str = "default"
+    namespace: str
     deployment_name: str
     service_name: Optional[str] = None
 
 
 class AnalyzeResponse(BaseModel):
     summary: str
+    primary_issue: Optional[str] = None
     probable_root_cause: str
     evidence: List[str]
     recommended_actions: List[str]
     suggested_kubectl_commands: List[str]
     confidence: int
-    diagnostics: Optional[Dict[str, Any]] = None
+    diagnostics: Dict[str, Any]
+    fix_plan: Optional[Dict[str, Any]] = None
