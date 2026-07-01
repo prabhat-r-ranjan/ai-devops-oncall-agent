@@ -22,3 +22,4 @@ class AnalyzeResponse(BaseModel):
     confidence: int
     diagnostics: Dict[str, Any]
     fix_plan: Optional[Dict[str, Any]] = None
+    repository_analysis: Optional[Dict[str, Any]] = None

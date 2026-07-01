@@ -1,5 +1,8 @@
 from fastapi import FastAPI
 from app.api.analyze import router as analyze_router
+from dotenv import load_dotenv
+
+load_dotenv()  # Load environment variables from .env file
 
 app = FastAPI(
     title="AI DevOps On-Call Agent",
