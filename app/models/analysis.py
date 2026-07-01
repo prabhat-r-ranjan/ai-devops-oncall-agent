@@ -23,3 +23,5 @@ class AnalyzeResponse(BaseModel):
     diagnostics: Dict[str, Any]
     fix_plan: Optional[Dict[str, Any]] = None
     repository_analysis: Optional[Dict[str, Any]] = None
+    manifest_update: Optional[Dict[str, Any]] = None
+    pull_request: Optional[Dict[str, Any]] = None

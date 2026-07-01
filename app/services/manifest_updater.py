@@ -1,5 +1,7 @@
+import os
+from typing import Any, Dict
+
 import yaml
-from typing import Dict, Any
 
 
 class ManifestUpdater:
@@ -8,14 +10,14 @@ class ManifestUpdater:
             return {
                 "enabled": True,
                 "status": "SKIPPED",
-                "message": "FixPlan is not auto-fixable."
+                "message": "FixPlan is not auto-fixable.",
             }
 
         if fix_plan.get("change_type") != "UPDATE_IMAGE_TAG":
             return {
                 "enabled": True,
                 "status": "UNSUPPORTED_CHANGE_TYPE",
-                "message": f"Unsupported change type: {fix_plan.get('change_type')}"
+                "message": f"Unsupported change type: {fix_plan.get('change_type')}",
             }
 
         manifest = yaml.safe_load(file_content)
@@ -31,7 +33,7 @@ class ManifestUpdater:
             return {
                 "enabled": True,
                 "status": "NO_CONTAINERS_FOUND",
-                "message": "No containers found in manifest."
+                "message": "No containers found in manifest.",
             }
 
         old_image = containers[0].get("image")
@@ -40,26 +42,42 @@ class ManifestUpdater:
             return {
                 "enabled": True,
                 "status": "NO_IMAGE_FOUND",
-                "message": "No image field found in container."
+                "message": "No image field found in container.",
             }
 
-        # For now: replace bad/live image with repo's known valid image logic later.
-        # Current updater proves YAML can be safely parsed and rewritten.
-        new_image = old_image
+        new_image = os.getenv("DEFAULT_BACKEND_IMAGE")
+
+        if not new_image:
+            return {
+                "enabled": True,
+                "status": "VALID_IMAGE_NOT_CONFIGURED",
+                "message": "DEFAULT_BACKEND_IMAGE environment variable is missing.",
+                "old_image": old_image,
+            }
+
+        if old_image == new_image:
+            return {
+                "enabled": True,
+                "status": "NO_CHANGE_NEEDED",
+                "message": "Manifest already contains the expected image.",
+                "old_image": old_image,
+                "new_image": new_image,
+                "updated_content": file_content,
+            }
 
         containers[0]["image"] = new_image
 
         updated_content = yaml.safe_dump(
             manifest,
             sort_keys=False,
-            default_flow_style=False
+            default_flow_style=False,
         )
 
         return {
             "enabled": True,
             "status": "UPDATED_IN_MEMORY",
-            "message": "Manifest parsed and updated in memory.",
+            "message": "Manifest image updated in memory.",
             "old_image": old_image,
             "new_image": new_image,
-            "updated_content": updated_content
+            "updated_content": updated_content,
         }
