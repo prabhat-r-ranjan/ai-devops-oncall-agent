@@ -97,7 +97,7 @@ class GitAnalyzer:
         return FixPlan(
             issue_type="IMAGE_PULL_BACKOFF",
             can_auto_fix=True,
-            target_file="k8s/backend-deployment.yaml",
+            target_file="k8s/base/backend-deployment.yaml",
             change_type="UPDATE_IMAGE_TAG",
             reason="Deployment is using an invalid or unavailable container image tag.",
             confidence=95,
@@ -120,7 +120,7 @@ class GitAnalyzer:
         return FixPlan(
             issue_type="PROBE_FAILURE",
             can_auto_fix=True,
-            target_file="k8s/backend-deployment.yaml",
+            target_file="k8s/base/backend-deployment.yaml",
             change_type="UPDATE_PROBE",
             reason="Kubernetes health probe appears to be failing.",
             confidence=90,
@@ -142,7 +142,7 @@ class GitAnalyzer:
         return FixPlan(
             issue_type="OOM_KILLED",
             can_auto_fix=True,
-            target_file="k8s/backend-deployment.yaml",
+            target_file="k8s/base/backend-deployment.yaml",
             change_type="UPDATE_MEMORY_LIMIT",
             reason="Container appears to be exceeding its configured memory limit.",
             confidence=88,
