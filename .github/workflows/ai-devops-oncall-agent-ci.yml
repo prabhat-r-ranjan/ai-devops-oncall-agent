@@ -1,0 +1,68 @@
+name: AI On-Call Agent CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+env:
+  REGISTRY: ${{ secrets.AZURE_CONTAINER_REGISTRY }}
+  IMAGE_NAME: ai-devops-oncall-agent
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Validate Python imports
+        run: |
+          python -m compileall app
+
+      - name: Build Docker image
+        run: |
+          docker build -t $REGISTRY/$IMAGE_NAME:${{ github.sha }} .
+          docker tag $REGISTRY/$IMAGE_NAME:${{ github.sha }} $REGISTRY/$IMAGE_NAME:latest
+
+      - name: Login to Azure Container Registry
+        if: github.event_name == 'push'
+        run: |
+          echo "${{ secrets.AZURE_REGISTRY_PASSWORD }}" | docker login $REGISTRY \
+            --username ${{ secrets.AZURE_REGISTRY_USERNAME }} \
+            --password-stdin
+
+      - name: Push Docker image to ACR
+        if: github.event_name == 'push'
+        run: |
+          docker push $REGISTRY/$IMAGE_NAME:${{ github.sha }}
+          docker push $REGISTRY/$IMAGE_NAME:latest
+
+      - name: Update Kubernetes manifest image tag
+        if: github.event_name == 'push'
+        run: |
+          sed -i "s|image: $REGISTRY/$IMAGE_NAME:.*|image: $REGISTRY/$IMAGE_NAME:${{ github.sha }}|" k8s/base/ai-devops-oncall-agent-deployment.yaml
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add k8s/base/ai-devops-oncall-agent-deployment.yaml
+          git commit -m "Update AI on-call agent image tag to ${{ github.sha }}" || echo "No changes to commit"
+          git push

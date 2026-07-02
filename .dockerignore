@@ -1,0 +1,11 @@
+.venv
+.env
+.git
+.gitignore
+__pycache__
+*.pyc
+.pytest_cache
+.vscode
+.idea
+README.md
+test_k8s_connection.py
