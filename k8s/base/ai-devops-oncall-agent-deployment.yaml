@@ -3,13 +3,11 @@ kind: Deployment
 
 metadata:
   name: ai-devops-oncall-agent
-  namespace: ai-devops
   labels:
     app: ai-devops-oncall-agent
 
 spec:
   replicas: 1
-
   selector:
     matchLabels:
       app: ai-devops-oncall-agent
