@@ -21,7 +21,11 @@ class AnalyzeResponse(BaseModel):
     suggested_kubectl_commands: List[str]
     confidence: int
     diagnostics: Dict[str, Any]
+
+    rule_fix_plan: Optional[Dict[str, Any]] = None
+    ai_fix_plan: Optional[Dict[str, Any]] = None
     fix_plan: Optional[Dict[str, Any]] = None
+
     repository_analysis: Optional[Dict[str, Any]] = None
     manifest_update: Optional[Dict[str, Any]] = None
     pull_request: Optional[Dict[str, Any]] = None
