@@ -22,12 +22,6 @@ class GitAnalyzer:
     """
 
     def __init__(self):
-        """
-        Register issue handlers.
-
-        Each issue type maps to one method that knows how to build
-        a FixPlan for that issue.
-        """
         self.issue_handlers: Dict[str, Callable[[dict], FixPlan]] = {
             "IMAGE_PULL_BACKOFF": self._image_pull_fix,
             "PROBE_FAILURE": self._probe_fix,
@@ -36,6 +30,15 @@ class GitAnalyzer:
             "HIGH_RESTART_COUNT": self._restart_fix,
             "DEPLOYMENT_NOT_READY": self._deployment_not_ready_fix,
             "ERROR_LOGS": self._application_code_issue_fix,
+
+            # Kubernetes/API access issues are not safe for manifest auto-fix.
+            "KUBERNETES_API_DNS_FAILURE": self._kubernetes_connectivity_fix,
+            "KUBERNETES_API_UNAVAILABLE": self._kubernetes_connectivity_fix,
+            "KUBERNETES_API_TIMEOUT": self._kubernetes_connectivity_fix,
+            "KUBERNETES_API_CONNECTION_REFUSED": self._kubernetes_connectivity_fix,
+            "KUBERNETES_RBAC_FORBIDDEN": self._kubernetes_connectivity_fix,
+            "DEPLOYMENT_NOT_FOUND": self._kubernetes_connectivity_fix,
+            "DIAGNOSTICS_UNAVAILABLE": self._kubernetes_connectivity_fix,
         }
 
     def analyze(self, rca_result: dict) -> FixPlan:
@@ -56,6 +59,29 @@ class GitAnalyzer:
             return self._manual_fix(rca_result)
 
         return handler(rca_result)
+
+    def _kubernetes_connectivity_fix(self, rca_result: dict) -> FixPlan:
+        """
+        Build FixPlan for Kubernetes API/connectivity/RBAC/lookup issues.
+
+        These issues must not create manifest PRs because the analyzer could not
+        safely confirm current cluster state.
+        """
+        issue_type = rca_result.get("primary_issue", "KUBERNETES_API_UNAVAILABLE")
+
+        return FixPlan(
+            issue_type=issue_type,
+            can_auto_fix=False,
+            target_file=None,
+            change_type="INFRA_CONNECTIVITY_REVIEW",
+            reason="Kubernetes diagnostics could not be collected safely. This is an infrastructure, connectivity, kubeconfig, DNS, RBAC, or resource lookup issue, not a safe manifest auto-fix.",
+            confidence=75,
+            evidence=self._extract_evidence(rca_result),
+            recommended_changes={
+                "action": "Restore Kubernetes API connectivity, kubeconfig, DNS/VPN/network access, RBAC permission, or correct deployment/namespace before attempting application fixes.",
+            },
+        )
+
     def _application_code_issue_fix(self, rca_result: dict) -> FixPlan:
         """
         Build FixPlan for application-level log errors.
@@ -76,14 +102,19 @@ class GitAnalyzer:
         )
 
     def _infer_issue_type(self, rca_result: dict) -> str:
-        """
-        Temporary fallback.
-
-        If RCA response does not yet contain primary_issue,
-        infer issue type from probable_root_cause text.
-        Later we should rely only on primary_issue.
-        """
         probable_root_cause = rca_result.get("probable_root_cause", "").lower()
+
+        if "dns" in probable_root_cause and "kubernetes api" in probable_root_cause:
+            return "KUBERNETES_API_DNS_FAILURE"
+
+        if "kubernetes api" in probable_root_cause and "unavailable" in probable_root_cause:
+            return "KUBERNETES_API_UNAVAILABLE"
+
+        if "rbac" in probable_root_cause or "forbidden" in probable_root_cause:
+            return "KUBERNETES_RBAC_FORBIDDEN"
+
+        if "deployment" in probable_root_cause and "not found" in probable_root_cause:
+            return "DEPLOYMENT_NOT_FOUND"
 
         if "container image" in probable_root_cause:
             return "IMAGE_PULL_BACKOFF"
@@ -106,13 +137,6 @@ class GitAnalyzer:
         return "UNKNOWN"
 
     def _image_pull_fix(self, rca_result: dict) -> FixPlan:
-        """
-        Build FixPlan for ImagePullBackOff.
-
-        Typical fix:
-        - Verify image tag.
-        - Update deployment manifest image field.
-        """
         return FixPlan(
             issue_type="IMAGE_PULL_BACKOFF",
             can_auto_fix=True,
@@ -128,14 +152,6 @@ class GitAnalyzer:
         )
 
     def _probe_fix(self, rca_result: dict) -> FixPlan:
-        """
-        Build FixPlan for readiness/liveness probe failure.
-
-        Typical fix:
-        - Correct probe path.
-        - Correct probe port.
-        - Increase initial delay or timeout.
-        """
         return FixPlan(
             issue_type="PROBE_FAILURE",
             can_auto_fix=True,
@@ -151,13 +167,6 @@ class GitAnalyzer:
         )
 
     def _oom_fix(self, rca_result: dict) -> FixPlan:
-        """
-        Build FixPlan for OOMKilled.
-
-        Typical fix:
-        - Increase memory limit.
-        - Review application memory usage.
-        """
         return FixPlan(
             issue_type="OOM_KILLED",
             can_auto_fix=True,
@@ -173,12 +182,6 @@ class GitAnalyzer:
         )
 
     def _crash_loop_fix(self, rca_result: dict) -> FixPlan:
-        """
-        Build FixPlan for CrashLoopBackOff.
-
-        This may require code or configuration analysis,
-        so auto-fix is disabled for now.
-        """
         return FixPlan(
             issue_type="CRASH_LOOP_BACKOFF",
             can_auto_fix=False,
@@ -193,11 +196,6 @@ class GitAnalyzer:
         )
 
     def _restart_fix(self, rca_result: dict) -> FixPlan:
-        """
-        Build FixPlan for high restart count.
-
-        This is a symptom, so manual/AI analysis is safer.
-        """
         return FixPlan(
             issue_type="HIGH_RESTART_COUNT",
             can_auto_fix=False,
@@ -212,12 +210,6 @@ class GitAnalyzer:
         )
 
     def _deployment_not_ready_fix(self, rca_result: dict) -> FixPlan:
-        """
-        Build FixPlan for deployment not ready.
-
-        This is usually caused by another lower-level issue,
-        so direct auto-fix is disabled.
-        """
         return FixPlan(
             issue_type="DEPLOYMENT_NOT_READY",
             can_auto_fix=False,
@@ -232,9 +224,6 @@ class GitAnalyzer:
         )
 
     def _manual_fix(self, rca_result: dict) -> FixPlan:
-        """
-        Build fallback FixPlan for unknown or unsupported issues.
-        """
         return FixPlan(
             issue_type=rca_result.get("primary_issue", "UNKNOWN"),
             can_auto_fix=False,
@@ -252,10 +241,5 @@ class GitAnalyzer:
         )
 
     def _extract_evidence(self, rca_result: dict) -> list[str]:
-        """
-        Extract limited evidence from RCA result for FixPlan.
-
-        We keep it short so PR descriptions do not become noisy.
-        """
         evidence = rca_result.get("evidence") or []
         return evidence[:5]

@@ -109,6 +109,19 @@ class OnCallAgentService:
 
         if issue_type == "HEALTHY":
             return False
+        
+        infrastructure_issues = {
+            "KUBERNETES_API_DNS_FAILURE",
+            "KUBERNETES_API_UNAVAILABLE",
+            "KUBERNETES_API_TIMEOUT",
+            "KUBERNETES_API_CONNECTION_REFUSED",
+            "KUBERNETES_RBAC_FORBIDDEN",
+            "DEPLOYMENT_NOT_FOUND",
+            "DIAGNOSTICS_UNAVAILABLE",
+        }
+
+        if issue_type in infrastructure_issues:
+            return False
 
         return (
             not fix_plan_dict.get("can_auto_fix")

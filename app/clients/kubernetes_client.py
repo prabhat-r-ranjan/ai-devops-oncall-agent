@@ -56,17 +56,35 @@ class KubernetesClient:
             }
 
         except ApiException as e:
+            error_type = "KUBERNETES_API_ERROR"
+            if e.status == 403:
+                error_type = "KUBERNETES_RBAC_FORBIDDEN"
+            elif e.status == 404:
+                error_type = "DEPLOYMENT_NOT_FOUND"
             return {
                 "namespace": namespace,
                 "deployment_name": deployment_name,
                 "error": f"Kubernetes API error: {e.reason}",
+                "error_type": error_type,
                 "status": e.status
             }
         except Exception as e:
+            error_message = str(e)
+            
+            error_type = "KUBERNETES_API_UNAVAILABLE"
+
+            if "NameResolutionError" in error_message or "Failed to resolve" in error_message:
+                error_type = "KUBERNETES_API_DNS_FAILURE"
+            elif "Connection refused" in error_message:
+                error_type = "KUBERNETES_API_CONNECTION_REFUSED"
+            elif "timed out" in error_message or "Max retries exceeded" in error_message:
+                error_type = "KUBERNETES_API_TIMEOUT"
             return {
                 "namespace": namespace,
                 "deployment_name": deployment_name,
-                "error": str(e)
+                "error": error_message,
+                "error_type": error_type,
+                "status": "UNAVAILABLE"
             }
 
     def _get_pods_for_deployment(self, namespace: str, deployment) -> list:

@@ -17,9 +17,6 @@ class RuleBasedRcaEngine:
     """
 
     def __init__(self):
-        """
-        Initialize detector and response builder.
-        """
         self.issue_detector = KubernetesIssueDetector()
         self.response_builder = RcaResponseBuilder()
 
@@ -33,10 +30,7 @@ class RuleBasedRcaEngine:
             )
 
         if diagnostics.get("error"):
-            return self.response_builder.build_unavailable_response(
-                diagnostics.get("error"),
-                diagnostics,
-            )
+            return self._build_kubernetes_unavailable_response(diagnostics)
 
         issues = self.issue_detector.detect(diagnostics)
         issues = self._filter_stale_issues(issues, diagnostics)
@@ -45,6 +39,112 @@ class RuleBasedRcaEngine:
         return self.response_builder.build_response(
             issues=issues,
             diagnostics=diagnostics,
+        )
+
+    def _build_kubernetes_unavailable_response(
+        self,
+        diagnostics: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Build clear RCA response when Kubernetes diagnostics cannot be collected.
+        """
+        error = diagnostics.get("error", "Kubernetes diagnostics unavailable.")
+        error_type = diagnostics.get("error_type", "DIAGNOSTICS_UNAVAILABLE")
+        namespace = diagnostics.get("namespace", "default")
+        deployment_name = diagnostics.get("deployment_name", "<deployment-name>")
+
+        if error_type == "KUBERNETES_API_DNS_FAILURE":
+            return {
+                "summary": "Unable to connect to Kubernetes API server due to DNS resolution failure.",
+                "primary_issue": "KUBERNETES_API_DNS_FAILURE",
+                "probable_root_cause": "Analyzer could not resolve the Kubernetes API server DNS name.",
+                "evidence": [error],
+                "recommended_actions": [
+                    "Verify AKS cluster is running.",
+                    "Run az aks get-credentials again.",
+                    "Check current kubectl context.",
+                    "Verify DNS/network/VPN access from analyzer runtime.",
+                ],
+                "suggested_kubectl_commands": [
+                    "kubectl config current-context",
+                    "kubectl cluster-info",
+                    f"kubectl get deployment {deployment_name} -n {namespace}",
+                    f"kubectl get events -n {namespace} --sort-by=.lastTimestamp",
+                ],
+                "confidence": 70,
+                "diagnostics": diagnostics,
+            }
+
+        if error_type == "KUBERNETES_RBAC_FORBIDDEN":
+            return {
+                "summary": "Kubernetes diagnostics failed because access was forbidden.",
+                "primary_issue": "KUBERNETES_RBAC_FORBIDDEN",
+                "probable_root_cause": "Analyzer does not have sufficient RBAC permissions to read Kubernetes resources.",
+                "evidence": [error],
+                "recommended_actions": [
+                    "Verify service account permissions.",
+                    "Check Role or ClusterRole bindings.",
+                    "Ensure analyzer can read deployments, pods, events, and logs.",
+                ],
+                "suggested_kubectl_commands": [
+                    f"kubectl auth can-i get deployments -n {namespace}",
+                    f"kubectl auth can-i get pods -n {namespace}",
+                    f"kubectl auth can-i get events -n {namespace}",
+                    f"kubectl auth can-i get pods/log -n {namespace}",
+                ],
+                "confidence": 75,
+                "diagnostics": diagnostics,
+            }
+
+        if error_type == "DEPLOYMENT_NOT_FOUND":
+            return {
+                "summary": "Deployment was not found in the target namespace.",
+                "primary_issue": "DEPLOYMENT_NOT_FOUND",
+                "probable_root_cause": "The deployment name or namespace may be incorrect, or the deployment may not exist.",
+                "evidence": [error],
+                "recommended_actions": [
+                    "Verify deployment name.",
+                    "Verify namespace.",
+                    "Check whether the deployment was deleted or not yet created.",
+                ],
+                "suggested_kubectl_commands": [
+                    f"kubectl get deployment {deployment_name} -n {namespace}",
+                    f"kubectl get deployments -n {namespace}",
+                    "kubectl get namespaces",
+                ],
+                "confidence": 80,
+                "diagnostics": diagnostics,
+            }
+
+        if error_type in {
+            "KUBERNETES_API_UNAVAILABLE",
+            "KUBERNETES_API_TIMEOUT",
+            "KUBERNETES_API_CONNECTION_REFUSED",
+        }:
+            return {
+                "summary": "Unable to connect to Kubernetes API server.",
+                "primary_issue": error_type,
+                "probable_root_cause": "Kubernetes API server is unavailable or unreachable from the analyzer runtime.",
+                "evidence": [error],
+                "recommended_actions": [
+                    "Verify cluster is running.",
+                    "Check kubeconfig and current context.",
+                    "Verify network/VPN/firewall access.",
+                    "Retry after Kubernetes API connectivity is restored.",
+                ],
+                "suggested_kubectl_commands": [
+                    "kubectl config current-context",
+                    "kubectl cluster-info",
+                    f"kubectl get deployment {deployment_name} -n {namespace}",
+                    f"kubectl get pods -n {namespace}",
+                ],
+                "confidence": 70,
+                "diagnostics": diagnostics,
+            }
+
+        return self.response_builder.build_unavailable_response(
+            error,
+            diagnostics,
         )
 
     def _filter_stale_issues(
