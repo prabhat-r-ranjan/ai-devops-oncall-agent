@@ -35,6 +35,7 @@ class GitAnalyzer:
             "CRASH_LOOP_BACKOFF": self._crash_loop_fix,
             "HIGH_RESTART_COUNT": self._restart_fix,
             "DEPLOYMENT_NOT_READY": self._deployment_not_ready_fix,
+            "ERROR_LOGS": self._application_code_issue_fix,
         }
 
     def analyze(self, rca_result: dict) -> FixPlan:
@@ -55,6 +56,24 @@ class GitAnalyzer:
             return self._manual_fix(rca_result)
 
         return handler(rca_result)
+    def _application_code_issue_fix(self, rca_result: dict) -> FixPlan:
+        """
+        Build FixPlan for application-level log errors.
+
+        Application code issues must not be auto-fixed by this agent.
+        """
+        return FixPlan(
+            issue_type="APPLICATION_CODE_ISSUE",
+            can_auto_fix=False,
+            target_file=None,
+            change_type="APPLICATION_TEAM_REVIEW",
+            reason="Application logs indicate an application-level issue. Auto-fix is disabled because this agent only changes Kubernetes manifests.",
+            confidence=65,
+            evidence=self._extract_evidence(rca_result),
+            recommended_changes={
+                "action": "Route to application team for code, dependency, configuration, or runtime investigation.",
+            },
+        )
 
     def _infer_issue_type(self, rca_result: dict) -> str:
         """

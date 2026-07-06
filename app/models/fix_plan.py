@@ -26,6 +26,7 @@ class FixPlan:
     confidence: int
     evidence: List[str] = field(default_factory=list)
     recommended_changes: Dict[str, Any] = field(default_factory=dict)
+    source: str = "RULE_ENGINE"
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -40,4 +41,5 @@ class FixPlan:
             "confidence": self.confidence,
             "evidence": self.evidence,
             "recommended_changes": self.recommended_changes,
+            "source": self.source,
         }

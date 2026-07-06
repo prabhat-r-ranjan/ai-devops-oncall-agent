@@ -1,119 +1,121 @@
-README.md
-
 🚀 AI DevOps On-Call Agent
-
------------------------------------------------------
-
 Hero Section
-Badges
-Project Overview
 
------------------------------------------------------
+Short 3–4 line description.
 
+Example:
+
+Enterprise-grade AI-assisted Kubernetes Incident Response platform that combines deterministic rule-based Root Cause Analysis (RCA) with AI-assisted decision support to safely diagnose incidents, generate Kubernetes manifest fixes, and automatically create GitOps Pull Requests.
+
+Add badges:
+
+Python
+FastAPI
+Kubernetes
+AKS
+GitHub Actions
+OpenAI
+Docker
 🎯 Problem Statement
 
-Why traditional monitoring is not enough
+Explain:
 
------------------------------------------------------
-
+Kubernetes generates thousands of alerts.
+Engineers spend time finding root cause.
+AI-only solutions are risky because they can generate unsafe changes.
+Enterprises require deterministic automation.
 🚀 Solution
 
-AI DevOps On-Call Agent
+Explain your architecture.
 
------------------------------------------------------
+Mention:
+
+Kubernetes Diagnostics
+Rule-Based RCA
+Rule-Based FixPlan
+AI Fallback
+Repository Analysis
+Manifest Update
+AI Reviewer
+GitHub Pull Request
+⭐ Why This Project Is Different
+
+This is the most important section.
+
+Compare:
+
+Typical AI
+Alert
+
+↓
+
+GPT
+
+↓
+
+Modify YAML
+
+↓
+
+Deploy
+
+vs
+
+Our Platform
+Alert
+
+↓
+
+Rule Engine
+
+↓
+
+FixPlan
+
+↓
+
+AI (Fallback)
+
+↓
+
+Manifest Update
+
+↓
+
+AI Review
+
+↓
+
+Pull Request
+
+↓
+
+Human Approval
+
+This section will stand out to judges.
 
 🏗 Current Architecture
 
-(Mermaid Diagram)
+Mermaid flowchart.
 
------------------------------------------------------
+Current implementation.
 
-🚀 Final Vision
+🚀 Future Vision
 
-(Mermaid Diagram)
+Another Mermaid diagram.
 
------------------------------------------------------
+Include:
 
+Slack
+Azure Monitor
+Prometheus
+Multi-cluster
+Learning engine
 ⚙ End-to-End Workflow
 
-(Mermaid Sequence Diagram)
+Mermaid sequence diagram.
 
------------------------------------------------------
-
-🧩 Current Features
-
-✅ Kubernetes Diagnostics
-
-✅ Rule Based RCA
-
-✅ Intelligent Event Filtering
-
-✅ Git Analyzer
-
-✅ Fix Planner
-
------------------------------------------------------
-
-📂 Project Structure
-
-app/
- api/
- services/
- clients/
- models/
-
-and responsibility of each folder
-
------------------------------------------------------
-
-🧠 Rule Engine Capabilities
-
-ImagePullBackOff
-
-CrashLoopBackOff
-
-OOMKilled
-
-Probe Failure
-
-Scheduling Failure
-
-Node Failure
-
-PVC Failure
-
-Restart Count
-
-Deployment Health
-
------------------------------------------------------
-
-🤖 Why Rule-Based Before AI?
-
-This is the section that judges will love.
-
-Explain
-
-Rule Based
-↓
-
-Cheap
-
-↓
-
-Fast
-
-↓
-
-Deterministic
-
-↓
-
-OpenAI only for unknown cases
-
------------------------------------------------------
-
-🔄 Automation Pipeline
+Exactly match the code:
 
 Incident
 
@@ -131,7 +133,19 @@ Git Analyzer
 
 ↓
 
-Fix Plan
+FixPlan
+
+↓
+
+Repository Analysis
+
+↓
+
+Manifest Update
+
+↓
+
+AI Reviewer
 
 ↓
 
@@ -144,6 +158,148 @@ PR
 ↓
 
 Human Approval
+🔒 Production Safety Principles ⭐⭐⭐⭐⭐
+
+Very important.
+
+List:
+
+Rule Engine always has priority.
+AI never edits Java code.
+AI never deploys directly.
+AI only modifies Kubernetes manifests.
+Manifest updates happen in memory.
+Pull Request required.
+Human approval required.
+GitOps preserved.
+
+This gives confidence to judges.
+
+🧠 AI Responsibilities
+
+Table:
+
+Component	Responsibility
+Rule Engine	Detect known Kubernetes issues
+AI FixPlan	Fallback for unknown incidents
+AI Reviewer	Review generated FixPlan
+GitHub Automation	Create Pull Request
+🧩 Current Features
+
+Already good.
+
+Update:
+
+Kubernetes Diagnostics
+Rule-Based RCA
+Intelligent Event Filtering
+Git Analyzer
+Repository Analysis
+Manifest Updater
+AI FixPlan
+AI Reviewer
+Pull Request Automation
+📂 Project Structure
+
+Keep.
+
+Add responsibilities.
+
+Example:
+
+app/
+├── api/          REST endpoints
+├── services/     Business logic
+├── clients/      Kubernetes/GitHub/OpenAI
+├── models/       Shared models
+├── utils/        Helper utilities
+🧠 Rule Engine Capabilities
+
+Professional table.
+
+Kubernetes Issue	Auto Fix
+ImagePullBackOff	✅
+OOMKilled	✅
+Probe Failure	✅
+CrashLoopBackOff	Manual
+Restart Count	Manual
+Scheduling Failure	Manual
+PVC Failure	Manual
+Node Failure	Manual
+Deployment Health	Detection
+🤖 Why Rule-Based Before AI?
+
+Explain:
+
+Rule Engine
+
+↓
+
+Cheap
+
+↓
+
+Fast
+
+↓
+
+Deterministic
+
+↓
+
+AI only for unknown cases
+
+This section aligns perfectly with your design philosophy.
+
+🔄 Automation Pipeline
+
+Update to match your actual implementation:
+
+Incident
+
+↓
+
+Kubernetes Diagnostics
+
+↓
+
+Rule-Based RCA
+
+↓
+
+Rule-Based FixPlan
+
+↓
+
+AI FixPlan (Fallback)
+
+↓
+
+Repository Analysis
+
+↓
+
+Manifest Update
+
+↓
+
+AI Reviewer
+
+↓
+
+Git Branch
+
+↓
+
+Commit
+
+↓
+
+Pull Request
+
+↓
+
+Human Approval
 
 ↓
 
@@ -152,102 +308,46 @@ GitHub Actions
 ↓
 
 AKS
+📸 API Example
 
------------------------------------------------------
+Example Request
 
-📸 Sample Request
-
-POST /analyze
-
------------------------------------------------------
-
-📸 Sample Response
+Example Response
 
 Healthy
-
 ImagePullBackOff
-
------------------------------------------------------
-
+OOMKilled
 🛣 Roadmap
 
-Phase 1 ✔
+Current
 
-Phase 2 ✔
+✅ Kubernetes Diagnostics
+✅ Rule Engine
+✅ Git Analyzer
+✅ Manifest Updater
+✅ AI Reviewer
+✅ GitHub Pull Request
 
-Phase 3 ✔
+Future
 
-Phase 4 ✔
-
-GitHub Automation (In Progress)
-
-OpenAI (Planned)
-
------------------------------------------------------
-
+Azure Monitor
+Prometheus
+Multi-cluster
+Slack
+Teams
+Learning Engine
 🏆 Hackathon Highlights
 
-Production Architecture
+This should summarize your strengths:
 
+Enterprise Architecture
+Rule-Based First
+AI Guardrails
+Production Safety
+GitOps Workflow
+Automatic Pull Requests
+Kubernetes Native
+AKS Ready
+OpenAI Integration
 Modular Design
-
-SRP
-
-Deterministic RCA
-
-AI only where needed
-
-Auto PR
-
-GitOps
-
-AKS
-
------------------------------------------------------
-
-👨‍💻 Tech Stack
-
-FastAPI
-
-Python
-
-Kubernetes SDK
-
-AKS
-
-GitHub API
-
-OpenAI
-
-Docker
-
-GitHub Actions
-
------------------------------------------------------
-
-📄 License
-
-
-Incident Management System
-           │
-           ▼
-      AI DevOps Agent
-           │
- ┌─────────┼──────────┐
- │         │          │
- ▼         ▼          ▼
-K8s     Rule RCA   Git Analyzer
- │         │          │
- └─────────┼──────────┘
-           ▼
-        Fix Planner
-           ▼
-     GitHub Client
-           ▼
-     Pull Request
-           ▼
- Human Approval
-           ▼
- GitHub Actions
-           ▼
-      Deploy AKS
+SOLID Principles

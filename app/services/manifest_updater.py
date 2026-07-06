@@ -9,7 +9,21 @@ class ManifestUpdater:
         if not fix_plan.get("can_auto_fix"):
             return self._skipped("FixPlan is not auto-fixable.")
 
-        manifest = yaml.safe_load(file_content)
+        try:
+            manifest = yaml.safe_load(file_content)
+        except yaml.YAMLError as e:
+            return {
+                "enabled": True,
+                "status": "INVALID_YAML",
+                "message": f"Manifest YAML could not be parsed: {str(e)}",
+            }
+
+        if not isinstance(manifest, dict):
+            return {
+                "enabled": True,
+                "status": "INVALID_MANIFEST",
+                "message": "Manifest content is empty or not a valid Kubernetes YAML object.",
+            }
         change_type = fix_plan.get("change_type")
 
         containers = (
