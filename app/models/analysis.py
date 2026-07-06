@@ -29,3 +29,4 @@ class AnalyzeResponse(BaseModel):
     repository_analysis: Optional[Dict[str, Any]] = None
     manifest_update: Optional[Dict[str, Any]] = None
     pull_request: Optional[Dict[str, Any]] = None
+    ai_review: Optional[Dict[str, Any]] = None

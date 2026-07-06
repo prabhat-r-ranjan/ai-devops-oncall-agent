@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from app.clients.github_client import GitHubClient
 from app.utils.branch_name_generator import generate_fix_branch
@@ -6,9 +6,14 @@ from app.utils.branch_name_generator import generate_fix_branch
 
 class PullRequestService:
     """
-    Orchestrates branch creation, file update, and pull request creation.
+    Creates a Git branch, commits manifest changes, and opens a Pull Request.
 
-    This service decides how to convert a manifest_update result into a PR.
+    Supports generic manifest changes such as:
+    - image tag updates
+    - memory limit updates
+    - probe configuration updates
+
+    AI review is optional and is added to the PR description when available.
     """
 
     def __init__(self):
@@ -20,7 +25,112 @@ class PullRequestService:
         repository_analysis: Dict[str, Any],
         manifest_update: Dict[str, Any],
         deployment_name: str,
+        ai_review: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
+        """
+        Create a GitHub pull request from an in-memory manifest update.
+
+        This method does not decide the fix.
+        It only creates a PR when:
+        - FixPlan is auto-fixable
+        - target file exists
+        - manifest was updated in memory
+        """
+
+        validation_error = self._validate_pr_inputs(
+            fix_plan=fix_plan,
+            repository_analysis=repository_analysis,
+            manifest_update=manifest_update,
+        )
+
+        if validation_error:
+            return validation_error
+
+        target_file = repository_analysis.get("target_file")
+        updated_content = manifest_update.get("updated_content")
+
+        field = manifest_update.get("field", "unknown")
+        old_value = manifest_update.get("old_value")
+        new_value = manifest_update.get("new_value")
+
+        if old_value == new_value:
+            return {
+                "enabled": True,
+                "status": "NO_CHANGE_NEEDED",
+                "message": (
+                    "Repository manifest already contains the expected value. "
+                    "This looks like cluster drift or a no-op fix."
+                ),
+                "target_file": target_file,
+                "field": field,
+                "old_value": old_value,
+                "new_value": new_value,
+                "recommended_action": "Rollback deployment or sync from GitOps source.",
+            }
+
+        branch_name = generate_fix_branch(
+            issue_type=fix_plan.get("issue_type", "unknown"),
+            deployment_name=deployment_name,
+        )
+
+        self.github_client.create_branch(branch_name)
+
+        commit_message = self._build_commit_message(
+            fix_plan=fix_plan,
+            deployment_name=deployment_name,
+        )
+
+        self.github_client.update_file(
+            path=target_file,
+            content=updated_content,
+            branch=branch_name,
+            commit_message=commit_message,
+        )
+
+        pr_title = self._build_pr_title(
+            fix_plan=fix_plan,
+            deployment_name=deployment_name,
+        )
+
+        pr_body = self._build_pr_body(
+            fix_plan=fix_plan,
+            target_file=target_file,
+            field=field,
+            old_value=old_value,
+            new_value=new_value,
+            ai_review=ai_review,
+        )
+
+        pr = self.github_client.create_pull_request(
+            title=pr_title,
+            body=pr_body,
+            head_branch=branch_name,
+        )
+
+        return {
+            "enabled": True,
+            "status": "PR_CREATED",
+            "branch": branch_name,
+            "target_file": target_file,
+            "field": field,
+            "old_value": old_value,
+            "new_value": new_value,
+            "pr_url": pr.get("html_url"),
+            "pr_number": pr.get("number"),
+            "commit_message": commit_message,
+            "ai_review": ai_review or {},
+        }
+
+    def _validate_pr_inputs(
+        self,
+        fix_plan: Dict[str, Any],
+        repository_analysis: Dict[str, Any],
+        manifest_update: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Validate whether PR creation can proceed.
+        """
+
         if not fix_plan.get("can_auto_fix"):
             return {
                 "enabled": True,
@@ -52,75 +162,115 @@ class PullRequestService:
                 "message": "Missing target file or updated content.",
             }
 
-        old_image = manifest_update.get("old_image")
-        new_image = manifest_update.get("new_image")
+        return None
 
-        if old_image == new_image:
-            return {
-                "enabled": True,
-                "status": "NO_CHANGE_NEEDED",
-                "message": (
-                    "Repository manifest already contains the expected image. "
-                    "This looks like cluster drift, not a repository manifest issue."
-                ),
-                "target_file": target_file,
-                "old_image": old_image,
-                "new_image": new_image,
-                "recommended_action": "Rollback deployment or sync from GitOps source.",
-            }
+    def _build_commit_message(
+        self,
+        fix_plan: Dict[str, Any],
+        deployment_name: str,
+    ) -> str:
+        issue_type = fix_plan.get("issue_type", "UNKNOWN")
+        return f"Fix {issue_type} for {deployment_name}"
 
-        branch_name = generate_fix_branch(
-            issue_type=fix_plan.get("issue_type", "unknown"),
-            deployment_name=deployment_name,
-        )
+    def _build_pr_title(
+        self,
+        fix_plan: Dict[str, Any],
+        deployment_name: str,
+    ) -> str:
+        issue_type = fix_plan.get("issue_type", "UNKNOWN")
+        return f"Fix {issue_type} for {deployment_name}"
 
-        self.github_client.create_branch(branch_name)
+    def _build_pr_body(
+        self,
+        fix_plan: Dict[str, Any],
+        target_file: str,
+        field: str,
+        old_value: Any,
+        new_value: Any,
+        ai_review: Optional[Dict[str, Any]],
+    ) -> str:
+        ai_review_section = self._build_ai_review_section(ai_review)
 
-        commit_message = f"Fix image tag for {deployment_name}"
+        return f"""
+# AI DevOps On-Call Agent
 
-        self.github_client.update_file(
-            path=target_file,
-            content=updated_content,
-            branch=branch_name,
-            commit_message=commit_message,
-        )
+## Issue
 
-        pr_title = f"Fix {fix_plan.get('issue_type')} for {deployment_name}"
-
-        pr_body = f"""
-## AI DevOps On-Call Agent Fix
-
-### Issue
 {fix_plan.get("issue_type")}
 
-### Reason
+## Root Cause
+
 {fix_plan.get("reason")}
 
-### Change
-Updated Kubernetes manifest:
+## Target File
 
 `{target_file}`
 
-### Image Change
-- Old: `{old_image}`
-- New: `{new_image}`
+## Change Type
 
-### Confidence
+`{fix_plan.get("change_type")}`
+
+## Updated Field
+
+`{field}`
+
+## Previous Value
+
+```text
+{old_value}
+```
+
+## Updated Value
+
+```text
+{new_value}
+```
+
+## FixPlan Confidence
+
 {fix_plan.get("confidence")}
+
+---
+
+{ai_review_section}
 """.strip()
 
-        pr = self.github_client.create_pull_request(
-            title=pr_title,
-            body=pr_body,
-            head_branch=branch_name,
+    def _build_ai_review_section(
+        self,
+        ai_review: Optional[Dict[str, Any]],
+    ) -> str:
+        review = ai_review or {}
+
+        additional_checks = review.get("additional_checks") or []
+        additional_checks_text = "\n".join(
+            f"- {item}" for item in additional_checks
         )
 
-        return {
-            "enabled": True,
-            "status": "PR_CREATED",
-            "branch": branch_name,
-            "target_file": target_file,
-            "pr_url": pr.get("html_url"),
-            "pr_number": pr.get("number"),
-            "commit_message": commit_message,
-        }
+        if not additional_checks_text:
+            additional_checks_text = (
+                "- Review the generated manifest before merge.\n"
+                "- Validate the change in a staging or test cluster.\n"
+                "- Monitor rollout status after merge."
+            )
+
+        return f"""
+## AI Review
+
+**Approved:** {review.get("approved")}
+
+**Risk:** {review.get("risk")}
+
+**AI Confidence:** {review.get("confidence")}
+
+### Review Summary
+
+{review.get("review_summary")}
+
+### Why This Fix Is Safe
+
+{review.get("why_this_fix_is_safe")}
+
+### Additional Checks
+
+{additional_checks_text}
+""".strip()
