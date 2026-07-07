@@ -23,6 +23,7 @@ class GitAnalyzer:
 
     def __init__(self):
         self.issue_handlers: Dict[str, Callable[[dict], FixPlan]] = {
+            "HEALTHY": self._healthy_fix,
             "IMAGE_PULL_BACKOFF": self._image_pull_fix,
             "PROBE_FAILURE": self._probe_fix,
             "OOM_KILLED": self._oom_fix,
@@ -163,6 +164,19 @@ class GitAnalyzer:
             recommended_changes={
                 "field": "readinessProbe/livenessProbe",
                 "action": "Review probe path, port, timeout, and initial delay.",
+            },
+        )
+    def _healthy_fix(self, rca_result: dict) -> FixPlan:
+        return FixPlan(
+            issue_type="HEALTHY",
+            can_auto_fix=False,
+            target_file=None,
+            change_type="NO_CHANGE_NEEDED",
+            reason="Deployment appears healthy. No Kubernetes manifest change is required.",
+            confidence=85,
+            evidence=self._extract_evidence(rca_result),
+            recommended_changes={
+                "action": "No change required. Continue monitoring.",
             },
         )
 
