@@ -78,8 +78,9 @@ Control	AI deploys directly	Human approval required
 Risk	AI can break production	Multiple guardrails prevent bad changes
 Cost	AI used for every query	AI only for unknown issues
 Compliance	Hard to audit	Complete traceability
-🏗️ Current Architecture
+## 🏗️ Current Architecture
 
+```mermaid
 flowchart TD
     A[Incident Input] --> B[Kubernetes Diagnostics]
     B --> C{Rule-Based RCA}
@@ -231,7 +232,7 @@ sequenceDiagram
     API-->>UI: Analysis complete
     UI-->>User: Show results & PR link
 
-    
+
 🔒 Production Safety Principles ⭐⭐⭐⭐⭐
 Our Golden Rules
 Rule Engine Always Has Priority
