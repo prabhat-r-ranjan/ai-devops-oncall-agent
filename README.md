@@ -167,25 +167,49 @@ ai-devops-oncall-agent/
 ├── Dockerfile                # Container configuration
 ├── docker-compose.yml       # Local development
 ├── requirements.txt         # Python dependencies
-└── README.md               # This file
-🚀 Future Vision
+└── README.md               # This file 
 
+## 🚀 Future Vision
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```mermaid
+flowchart TD
+    subgraph Inputs["Input Sources"]
+        A[Slack Commands]
+        B[Azure Monitor]
+        C[Prometheus]
+        D[Manual Entry]
+    end
+    
+    subgraph Platform["Core Platform"]
+        E[AI DevOps On-Call Agent]
+        F[Rule Engine]
+        G[AI Fallback]
+        H[Multi-Cluster Support]
+    end
+    
+    subgraph Outputs["Outputs"]
+        I[GitHub PR]
+        J[Slack Notifications]
+        K[Teams Alerts]
+        L[Learning Engine]
+    end
+    
+    A --> E
+    B --> E
+    C --> E
+    D --> E
+    E --> F
+    F --> G
+    G --> H
+    H --> I
+    H --> J
+    H --> K
+    F -.->|Feedback| L
+    G -.->|Feedback| L
+    L -.->|Improves| F
+    
+    style E fill:#f9f,stroke:#333,stroke-width:3px
+    style L fill:#ff9,stroke:#333,stroke-width:2px
 
 🌟 Future Enhancements
 🔔 Slack Integration: Run /incident commands directly from Slack
@@ -200,7 +224,81 @@ ai-devops-oncall-agent/
 
 📱 Teams: Microsoft Teams notifications and commands
 
-⚙️ End-to-End Workflow
+## ⚙️ End-to-End Workflow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI as Frontend UI
+    participant API as FastAPI Backend
+    participant K8s as Kubernetes API
+    participant Rules as Rule Engine
+    participant AI as OpenAI
+    participant Git as Git Analyzer
+    participant GH as GitHub API
+    
+    User->>UI: Submit incident
+    UI->>API: POST /analyze
+    API->>K8s: Get pod logs & events
+    K8s-->>API: Diagnostics data
+    
+    API->>Rules: Run RCA
+    alt Known Issue
+        Rules-->>API: Rule-based FixPlan
+    else Unknown Issue
+        Rules->>AI: Request FixPlan
+        AI-->>API: AI-generated FixPlan
+    end
+    
+    API->>Git: Analyze repository
+    Git-->>API: Manifest files
+    
+    API->>API: Generate manifest update
+    API->>AI: Review changes
+    AI-->>API: Validation result
+    
+    API->>GH: Create branch & commit
+    GH-->>API: Commit SHA
+    
+    API->>GH: Create Pull Request
+    GH-->>API: PR URL
+    
+    API-->>UI: Analysis complete
+    UI-->>User: Show results & PR link
+
+    
+---
+
+## What This Code Does:
+
+This creates a **Sequence Diagram** showing the complete flow:
+
+1. **User** submits incident via UI
+2. **UI** sends POST request to API
+3. **API** gets diagnostics from Kubernetes
+4. **Rule Engine** runs RCA
+   - If Known Issue → Rule-based FixPlan
+   - If Unknown Issue → AI generates FixPlan
+5. **Git Analyzer** analyzes repository
+6. **API** generates manifest update
+7. **AI** reviews changes
+8. **GitHub API** creates branch, commit, and PR
+9. **UI** shows results to user
+
+---
+
+## How to Use:
+
+1. **Copy** the entire code block above
+2. **Paste** it into your README.md file
+3. **Save** the file
+4. **Push** to GitHub
+5. **View** - the sequence diagram will render automatically!
+
+---
+
+## If You Want Just the Mermaid Code (Without Markdown):
+
 🔒 Production Safety Principles ⭐⭐⭐⭐⭐
 Our Golden Rules
 Rule Engine Always Has Priority
