@@ -31,52 +31,29 @@
 **AI DevOps On-Call Agent** bridges the gap between deterministic rule-based automation and AI-assisted decision support through a multi-layered safety-first architecture:
 
 ### 🏗️ Architecture Components
-┌─────────────────────────────────────────────────────────────────┐
-│ Incident Detection │
-│ (Manual / Future: Slack/Azure) │
-└────────────────────┬────────────────────────────────────────────┘
-▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Kubernetes Diagnostics │
-│ (Pod Logs • Events • Metrics • Status) │
-└────────────────────┬────────────────────────────────────────────┘
-▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Rule-Based RCA Engine │
-│ (Known Issues: ImagePullBackOff, OOMKilled) │
-└────────────────────┬────────────────────────────────────────────┘
-▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Rule-Based FixPlan Generation │
-│ (Deterministic fixes for known issues) │
-└────────────────────┬────────────────────────────────────────────┘
-▼
-┌─────────────────────────────────────────────────────────────────┐
-│ AI Fallback (Only if Rules Fail) │
-│ (GPT-4 for novel/unseen issues) │
-└────────────────────┬────────────────────────────────────────────┘
-▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Repository Analysis │
-│ (Git repo • Manifests • Config) │
-└────────────────────┬────────────────────────────────────────────┘
-▼
-┌─────────────────────────────────────────────────────────────────┐
-│ Manifest Update (In-Memory) │
-│ (Safe, atomic YAML modifications) │
-└────────────────────┬────────────────────────────────────────────┘
-▼
-┌─────────────────────────────────────────────────────────────────┐
-│ AI Reviewer │
-│ (Validates changes • Prevents unsafe fixes) │
-└────────────────────┬────────────────────────────────────────────┘
-▼
-┌─────────────────────────────────────────────────────────────────┐
-│ GitHub Pull Request Automation │
-│ (Branch • Commit • PR • Human Approval) │
-└─────────────────────────────────────────────────────────────────┘
 
-text
+` ` `mermaid
+flowchart LR
+    A[Incident Detection] --> B[Kubernetes Diagnostics]
+    B --> C[Rule-Based RCA Engine]
+    C --> D[Rule-Based FixPlan]
+    C --> E[AI Fallback]
+    D --> F[Repository Analysis]
+    E --> F
+    F --> G[Manifest Update]
+    G --> H[AI Reviewer]
+    H --> I[GitHub Pull Request]
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#9f9,stroke:#333,stroke-width:2px
+    style D fill:#9f9,stroke:#333,stroke-width:2px
+    style E fill:#f96,stroke:#333,stroke-width:2px
+    style F fill:#bbf,stroke:#333,stroke-width:2px
+    style G fill:#bbf,stroke:#333,stroke-width:2px
+    style H fill:#bbf,stroke:#333,stroke-width:2px
+    style I fill:#ff9,stroke:#333,stroke-width:2px
+` ` `
 
 ### 🔬 Key Capabilities
 
@@ -92,14 +69,16 @@ text
 ## ⭐ Why This Project Is Different
 
 ### ❌ Typical AI Solution (Risky)
-Alert → GPT → Modify YAML → Deploy (No Safety)
 
-text
+` ` `
+Alert → GPT → Modify YAML → Deploy (No Safety)
+` ` `
 
 ### ✅ Our Platform (Safe by Design)
-Alert → Rule Engine → FixPlan → AI (Fallback) → Manifest Update → AI Review → Pull Request → Human Approval
 
-text
+` ` `
+Alert → Rule Engine → FixPlan → AI (Fallback) → Manifest Update → AI Review → Pull Request → Human Approval
+` ` `
 
 ### 🎯 Key Differentiators
 
@@ -116,7 +95,7 @@ text
 
 ## 🏗️ Current Architecture
 
-```mermaid
+` ` `mermaid
 flowchart TD
     A[Incident Input] --> B[Kubernetes Diagnostics]
     B --> C{Rule-Based RCA}
@@ -135,8 +114,11 @@ flowchart TD
     style E fill:#f96,stroke:#333,stroke-width:2px
     style H fill:#bbf,stroke:#333,stroke-width:2px
     style J fill:#ff9,stroke:#333,stroke-width:2px
-📁 Project Structure
-text
+` ` `
+
+### 📁 Project Structure
+
+` ` `
 ai-devops-oncall-agent/
 ├── app/
 │   ├── api/                    # REST API endpoints
@@ -167,11 +149,14 @@ ai-devops-oncall-agent/
 ├── Dockerfile                # Container configuration
 ├── docker-compose.yml       # Local development
 ├── requirements.txt         # Python dependencies
-└── README.md               # This file 
+└── README.md               # This file
+` ` `
+
+---
 
 ## 🚀 Future Vision
 
-```mermaid
+` ` `mermaid
 flowchart TD
     subgraph Inputs["Input Sources"]
         A[Slack Commands]
@@ -210,23 +195,22 @@ flowchart TD
     
     style E fill:#f9f,stroke:#333,stroke-width:3px
     style L fill:#ff9,stroke:#333,stroke-width:2px
+` ` `
 
-🌟 Future Enhancements
-🔔 Slack Integration: Run /incident commands directly from Slack
+### 🌟 Future Enhancements
 
-📊 Azure Monitor: Auto-detect incidents from Azure alerts
+- **🔔 Slack Integration**: Run `/incident` commands directly from Slack
+- **📊 Azure Monitor**: Auto-detect incidents from Azure alerts
+- **📈 Prometheus**: Real-time metric-based anomaly detection
+- **🏗️ Multi-Cluster**: Support for multiple AKS clusters
+- **🧠 Learning Engine**: Continuous improvement from resolved incidents
+- **📱 Teams**: Microsoft Teams notifications and commands
 
-📈 Prometheus: Real-time metric-based anomaly detection
-
-🏗️ Multi-Cluster: Support for multiple AKS clusters
-
-🧠 Learning Engine: Continuous improvement from resolved incidents
-
-📱 Teams: Microsoft Teams notifications and commands
+---
 
 ## ⚙️ End-to-End Workflow
 
-```mermaid
+` ` `mermaid
 sequenceDiagram
     participant User
     participant UI as Frontend UI
@@ -265,152 +249,110 @@ sequenceDiagram
     
     API-->>UI: Analysis complete
     UI-->>User: Show results & PR link
-
-    
----
-
-## What This Code Does:
-
-This creates a **Sequence Diagram** showing the complete flow:
-
-1. **User** submits incident via UI
-2. **UI** sends POST request to API
-3. **API** gets diagnostics from Kubernetes
-4. **Rule Engine** runs RCA
-   - If Known Issue → Rule-based FixPlan
-   - If Unknown Issue → AI generates FixPlan
-5. **Git Analyzer** analyzes repository
-6. **API** generates manifest update
-7. **AI** reviews changes
-8. **GitHub API** creates branch, commit, and PR
-9. **UI** shows results to user
+` ` `
 
 ---
 
-## How to Use:
+## 🔒 Production Safety Principles ⭐⭐⭐⭐⭐
 
-1. **Copy** the entire code block above
-2. **Paste** it into your README.md file
-3. **Save** the file
-4. **Push** to GitHub
-5. **View** - the sequence diagram will render automatically!
+### Our Golden Rules
+
+1. **Rule Engine Always Has Priority**
+   - Known issues are handled deterministically
+   - No AI involvement for predictable problems
+
+2. **AI Never Edits Java Code**
+   - AI only modifies Kubernetes manifests
+   - Application code remains untouched
+
+3. **AI Never Deploys Directly**
+   - No direct apply or kubectl commands
+   - Every change requires a PR
+
+4. **AI Only Modifies Kubernetes Manifests**
+   - Strictly limited to YAML configurations
+   - No infrastructure or networking changes
+
+5. **Manifest Updates Happen In-Memory**
+   - No direct file system changes
+   - Atomic updates with validation
+
+6. **Pull Request Required**
+   - Every change goes through GitHub
+   - Full audit trail maintained
+
+7. **Human Approval Required**
+   - No auto-merge
+   - SRE reviews all changes
+
+8. **GitOps Preserved**
+   - Declarative configuration management
+   - No imperative changes
+
+### 🏆 Safety Confidence
+
+- **100%** - Rule-based fixes are deterministic
+- **99.9%** - AI changes are validated and reviewed
+- **100%** - Human approval prevents unauthorized changes
+- **Complete** - Audit trail for every action
 
 ---
 
-## If You Want Just the Mermaid Code (Without Markdown):
+## 🧠 AI Responsibilities
 
-🔒 Production Safety Principles ⭐⭐⭐⭐⭐
-Our Golden Rules
-Rule Engine Always Has Priority
+| Component | Responsibility | Safety Mechanism |
+|-----------|---------------|------------------|
+| **Rule Engine** | Detect known Kubernetes issues | Deterministic, no AI involvement |
+| **AI FixPlan** | Fallback for unknown incidents | Only when rules fail, validated by reviewers |
+| **AI Reviewer** | Review generated FixPlan | Validates changes, flags unsafe modifications |
+| **GitHub Automation** | Create Pull Request | Human approval required before merge |
 
-Known issues are handled deterministically
+### 🎯 AI Safety Checks
 
-No AI involvement for predictable problems
+- ✅ Manifest syntax validation
+- ✅ Kubernetes API compatibility
+- ✅ No application code modifications
+- ✅ No infrastructure changes
+- ✅ Security best practices enforced
+- ✅ Change impact analysis
 
-AI Never Edits Java Code
+---
 
-AI only modifies Kubernetes manifests
+## 🧩 Current Features
 
-Application code remains untouched
+### ✅ Implemented
 
-AI Never Deploys Directly
+- **Kubernetes Diagnostics**: Pod logs, events, metrics, deployment status
+- **Rule-Based RCA**: 15+ deterministic rules for common K8s issues
+- **Intelligent Event Filtering**: Smart filtering of K8s events
+- **Git Analyzer**: Repository structure analysis
+- **Repository Analysis**: Manifest file detection and parsing
+- **Manifest Updater**: In-memory YAML modification
+- **AI FixPlan**: GPT-4 fallback for unknown issues
+- **AI Reviewer**: Change validation and safety checks
+- **Pull Request Automation**: Full GitHub PR workflow
 
-No direct apply or kubectl commands
+### 📊 Rule Engine Capabilities
 
-Every change requires a PR
+| Kubernetes Issue | Auto Fix | Supported |
+|------------------|----------|-----------|
+| **ImagePullBackOff** | ✅ | Update image tag |
+| **OOMKilled** | ✅ | Increase memory limits |
+| **Probe Failure** | ✅ | Adjust probes |
+| **CrashLoopBackOff** | ⚠️ | Manual investigation |
+| **Restart Count** | ⚠️ | Manual investigation |
+| **Scheduling Failure** | ⚠️ | Manual investigation |
+| **PVC Failure** | ❌ | Manual investigation |
+| **Node Failure** | ❌ | Manual investigation |
+| **Deployment Health** | ✅ | Detection only |
 
-AI Only Modifies Kubernetes Manifests
+---
 
-Strictly limited to YAML configurations
+## 🤖 Why Rule-Based Before AI?
 
-No infrastructure or networking changes
+### The Rule-First Approach
 
-Manifest Updates Happen In-Memory
-
-No direct file system changes
-
-Atomic updates with validation
-
-Pull Request Required
-
-Every change goes through GitHub
-
-Full audit trail maintained
-
-Human Approval Required
-
-No auto-merge
-
-SRE reviews all changes
-
-GitOps Preserved
-
-Declarative configuration management
-
-No imperative changes
-
-🏆 Safety Confidence
-100% - Rule-based fixes are deterministic
-
-99.9% - AI changes are validated and reviewed
-
-100% - Human approval prevents unauthorized changes
-
-Complete - Audit trail for every action
-
-🧠 AI Responsibilities
-Component	Responsibility	Safety Mechanism
-Rule Engine	Detect known Kubernetes issues	Deterministic, no AI involvement
-AI FixPlan	Fallback for unknown incidents	Only when rules fail, validated by reviewers
-AI Reviewer	Review generated FixPlan	Validates changes, flags unsafe modifications
-GitHub Automation	Create Pull Request	Human approval required before merge
-🎯 AI Safety Checks
-✅ Manifest syntax validation
-
-✅ Kubernetes API compatibility
-
-✅ No application code modifications
-
-✅ No infrastructure changes
-
-✅ Security best practices enforced
-
-✅ Change impact analysis
-
-🧩 Current Features
-✅ Implemented
-Kubernetes Diagnostics: Pod logs, events, metrics, deployment status
-
-Rule-Based RCA: 15+ deterministic rules for common K8s issues
-
-Intelligent Event Filtering: Smart filtering of K8s events
-
-Git Analyzer: Repository structure analysis
-
-Repository Analysis: Manifest file detection and parsing
-
-Manifest Updater: In-memory YAML modification
-
-AI FixPlan: GPT-4 fallback for unknown issues
-
-AI Reviewer: Change validation and safety checks
-
-Pull Request Automation: Full GitHub PR workflow
-
-📊 Rule Engine Capabilities
-Kubernetes Issue	Auto Fix	Supported
-ImagePullBackOff	✅	Update image tag
-OOMKilled	✅	Increase memory limits
-Probe Failure	✅	Adjust probes
-CrashLoopBackOff	⚠️	Manual investigation
-Restart Count	⚠️	Manual investigation
-Scheduling Failure	⚠️	Manual investigation
-PVC Failure	❌	Manual investigation
-Node Failure	❌	Manual investigation
-Deployment Health	✅	Detection only
-🤖 Why Rule-Based Before AI?
-The Rule-First Approach
-text
+` ` `
 Rule Engine
     ↓
 ⚡ Cheap (No API costs)
@@ -422,15 +364,23 @@ Rule Engine
 ⚡ Understandable (SREs can audit)
     ↓
 🤖 AI only for unknown cases
-Cost and Performance Benefits
-Metric	Rule-Based	AI-Based	Savings
-Cost per Incident	$0.00	$0.02-0.05	100%
-Response Time	< 1s	2-5s	4-5x faster
-Accuracy	100% (known)	85-95%	Deterministic
-Explainability	High	Medium	Full audit
-Safety	Guaranteed	Guarded	More secure
-🔄 Automation Pipeline
-text
+` ` `
+
+### Cost and Performance Benefits
+
+| Metric | Rule-Based | AI-Based | Savings |
+|--------|-----------|----------|---------|
+| **Cost per Incident** | $0.00 | $0.02-0.05 | 100% |
+| **Response Time** | < 1s | 2-5s | 4-5x faster |
+| **Accuracy** | 100% (known) | 85-95% | Deterministic |
+| **Explainability** | High | Medium | Full audit |
+| **Safety** | Guaranteed | Guarded | More secure |
+
+---
+
+## 🔄 Automation Pipeline
+
+` ` `
 ┌─────────────┐
 │   Incident  │
 └──────┬──────┘
@@ -495,12 +445,20 @@ text
 ┌─────────────┐
 │     AKS     │
 └─────────────┘
-📸 API Example
-📤 Example Request
-http
+` ` `
+
+---
+
+## 📸 API Example
+
+### 📤 Example Request
+
+` ` `http
 POST /analyze
 Content-Type: application/json
-json
+` ` `
+
+` ` `json
 {
   "incident_id": "INC-HEALTHY-001",
   "title": "Healthy deployment check",
@@ -510,9 +468,13 @@ json
   "deployment_name": "incident-backend",
   "service_name": "incident-backend"
 }
-📥 Example Responses
-✅ Healthy Deployment
-json
+` ` `
+
+### 📥 Example Responses
+
+#### ✅ Healthy Deployment
+
+` ` `json
 {
   "summary": "✓ Deployment is healthy. No issues detected.",
   "primary_issue": "HEALTHY",
@@ -531,8 +493,11 @@ json
   "confidence": 1.0,
   "diagnostics": {}
 }
-🔴 ImagePullBackOff
-json
+` ` `
+
+#### 🔴 ImagePullBackOff
+
+` ` `json
 {
   "summary": "❌ ImagePullBackOff detected. Image tag is invalid.",
   "primary_issue": "IMAGE_PULL_BACKOFF",
@@ -562,8 +527,11 @@ json
     "pr_url": "https://github.com/org/repo/pull/42"
   }
 }
-💥 OOMKilled
-json
+` ` `
+
+#### 💥 OOMKilled
+
+` ` `json
 {
   "summary": "⚠️ OOMKilled detected. Memory limit too low.",
   "primary_issue": "OOM_KILLED",
@@ -588,110 +556,101 @@ json
     "suggested_memory": "1Gi"
   }
 }
-🛣️ Roadmap
-✅ Current Implementation
-✅ Kubernetes Diagnostics
+` ` `
 
-✅ Rule-Based RCA Engine
+---
 
-✅ Git Analyzer & Repository Analysis
+## 🛣️ Roadmap
 
-✅ Manifest Updater (In-Memory)
+### ✅ Current Implementation
 
-✅ AI Reviewer
+- ✅ Kubernetes Diagnostics
+- ✅ Rule-Based RCA Engine
+- ✅ Git Analyzer & Repository Analysis
+- ✅ Manifest Updater (In-Memory)
+- ✅ AI Reviewer
+- ✅ GitHub Pull Request Automation
+- ✅ AI Fallback (GPT-4)
+- ✅ Frontend Dashboard UI
+- ✅ Rule-Based FixPlan Generation
 
-✅ GitHub Pull Request Automation
+### 🚀 Future Vision
 
-✅ AI Fallback (GPT-4)
+- 🔔 Azure Monitor Integration
+- 📊 Prometheus Integration
+- 🏗️ Multi-Cluster Support
+- 💬 Slack Integration
+- 📱 Microsoft Teams Integration
+- 🧠 Learning Engine (Incident Knowledge Base)
+- 📈 Metrics & Analytics Dashboard
+- 🔄 Auto-Rollback on Failed Deployments
+- 🏷️ Incident Tagging & Categorization
+- 📧 Email Notifications
 
-✅ Frontend Dashboard UI
+---
 
-✅ Rule-Based FixPlan Generation
+## 🏆 Hackathon Highlights
 
-🚀 Future Vision
-🔔 Azure Monitor Integration
+### Why We Stand Out
 
-📊 Prometheus Integration
+| Highlight | Description |
+|-----------|-------------|
+| **🏗️ Enterprise Architecture** | Scalable, modular design following SOLID principles |
+| **🎯 Rule-Based First** | Deterministic fixes for known issues, cost-effective |
+| **🛡️ AI Guardrails** | Safety-first approach with multiple protection layers |
+| **🔒 Production Safety** | No direct deploys, mandatory human approval |
+| **🔐 GitOps Workflow** | Declarative configuration management |
+| **🤖 Automatic Pull Requests** | Full GitHub automation |
+| **☸️ Kubernetes Native** | Deep integration with K8s API |
+| **☁️ AKS Ready** | Enterprise-grade Azure integration |
+| **🧠 OpenAI Integration** | Intelligent fallback for novel issues |
+| **📦 Modular Design** | Clean separation of concerns |
+| **🎨 Beautiful UI** | Production-ready frontend dashboard |
+| **📊 Complete Observability** | Comprehensive diagnostics and evidence |
 
-🏗️ Multi-Cluster Support
+---
 
-💬 Slack Integration
+## 🛠️ Tech Stack
 
-📱 Microsoft Teams Integration
+### Backend
 
-🧠 Learning Engine (Incident Knowledge Base)
+- **Python 3.11+** - Core language
+- **FastAPI** - REST API framework
+- **Kubernetes Client** - K8s API interaction
+- **PyGithub** - GitHub API integration
+- **OpenAI** - GPT-4 for AI fallback
+- **PyYAML** - YAML manipulation
 
-📈 Metrics & Analytics Dashboard
+### Frontend
 
-🔄 Auto-Rollback on Failed Deployments
+- **Next.js 15** - React framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **Lucide Icons** - Icon library
 
-🏷️ Incident Tagging & Categorization
+### Infrastructure
 
-📧 Email Notifications
+- **Docker** - Containerization
+- **Kubernetes** - Orchestration
+- **AKS** - Azure managed K8s
+- **GitHub Actions** - CI/CD
 
-🏆 Hackathon Highlights
-Why We Stand Out
-Highlight	Description
-🏗️ Enterprise Architecture	Scalable, modular design following SOLID principles
-🎯 Rule-Based First	Deterministic fixes for known issues, cost-effective
-🛡️ AI Guardrails	Safety-first approach with multiple protection layers
-🔒 Production Safety	No direct deploys, mandatory human approval
-🔐 GitOps Workflow	Declarative configuration management
-🤖 Automatic Pull Requests	Full GitHub automation
-☸️ Kubernetes Native	Deep integration with K8s API
-☁️ AKS Ready	Enterprise-grade Azure integration
-🧠 OpenAI Integration	Intelligent fallback for novel issues
-📦 Modular Design	Clean separation of concerns
-🎨 Beautiful UI	Production-ready frontend dashboard
-📊 Complete Observability	Comprehensive diagnostics and evidence
-🛠️ Tech Stack
-Backend
-Python 3.11+ - Core language
+---
 
-FastAPI - REST API framework
+## 📚 Getting Started
 
-Kubernetes Client - K8s API interaction
+### Prerequisites
 
-PyGithub - GitHub API integration
+- Python 3.11+
+- Node.js 18+
+- Docker
+- Kubernetes Cluster (local or cloud)
+- GitHub Personal Access Token
+- OpenAI API Key
 
-OpenAI - GPT-4 for AI fallback
+### Quick Start
 
-PyYAML - YAML manipulation
-
-Frontend
-Next.js 15 - React framework
-
-TypeScript - Type safety
-
-Tailwind CSS - Styling
-
-Lucide Icons - Icon library
-
-Infrastructure
-Docker - Containerization
-
-Kubernetes - Orchestration
-
-AKS - Azure managed K8s
-
-GitHub Actions - CI/CD
-
-📚 Getting Started
-Prerequisites
-Python 3.11+
-
-Node.js 18+
-
-Docker
-
-Kubernetes Cluster (local or cloud)
-
-GitHub Personal Access Token
-
-OpenAI API Key
-
-Quick Start
-bash
+` ` `bash
 # Clone repository
 git clone https://github.com/yourorg/ai-devops-oncall-agent.git
 cd ai-devops-oncall-agent
@@ -714,22 +673,33 @@ uvicorn app.main:app --reload
 
 # Run frontend (in another terminal)
 npm run dev
-🤝 Contributing
+` ` `
+
+---
+
+## 🤝 Contributing
+
 We welcome contributions! Please see our Contributing Guide for details.
 
-📄 License
+---
+
+## 📄 License
+
 This project is proprietary and confidential. All rights reserved.
 
-🙏 Acknowledgments
-Kubernetes Community - For the amazing orchestration platform
+---
 
-OpenAI - For GPT-4 capabilities
+## 🙏 Acknowledgments
 
-GitHub - For Actions and API
+- **Kubernetes Community** - For the amazing orchestration platform
+- **OpenAI** - For GPT-4 capabilities
+- **GitHub** - For Actions and API
+- **Azure** - For AKS and cloud infrastructure
 
-Azure - For AKS and cloud infrastructure
+---
 
 <div align="center">
-Built with ❤️ by the AI DevOps Team
 
-</div> ```
+**Built with ❤️ by the AI DevOps Team**
+
+</div>
