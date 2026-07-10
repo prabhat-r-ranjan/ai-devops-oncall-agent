@@ -1,0 +1,18 @@
+flowchart TD
+    A[Incident Input] --> B[Kubernetes Diagnostics]
+    B --> C{Rule-Based RCA}
+    C -->|Known Issue| D[Rule-Based FixPlan]
+    C -->|Unknown Issue| E[AI Fallback]
+    D --> F[Repository Analysis]
+    E --> F
+    F --> G[Manifest Update]
+    G --> H[AI Reviewer]
+    H --> I[GitHub Pull Request]
+    I --> J[Human Approval]
+    
+    style A fill:#f9f,stroke:#333,stroke-width:2px
+    style C fill:#bbf,stroke:#333,stroke-width:2px
+    style D fill:#9f9,stroke:#333,stroke-width:2px
+    style E fill:#f96,stroke:#333,stroke-width:2px
+    style H fill:#bbf,stroke:#333,stroke-width:2px
+    style J fill:#ff9,stroke:#333,stroke-width:2px
