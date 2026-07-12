@@ -7,7 +7,7 @@ metadata:
 data:
   GITHUB_OWNER: "prabhat-r-ranjan"
   GITHUB_REPO: "incident-management-system"
-  GITHUB_BASE_BRANCH: "main"
+  GITHUB_BASE_BRANCH: "master"
 
   OPENAI_MODEL: "gpt-4.1-mini"
 
