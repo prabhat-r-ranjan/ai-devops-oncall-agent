@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-devops-oncall-agent-config
+  namespace: default
+
+data:
+  GITHUB_OWNER: "prabhat-r-ranjan"
+  GITHUB_REPO: "incident-management-system"
+  GITHUB_BASE_BRANCH: "main"
+
+  OPENAI_MODEL: "gpt-4.1-mini"
+
+  DEFAULT_BACKEND_IMAGE: "prabhatcr001.azurecr.io/incident-backend:17ec5bca86c5238cf840a10bc8a55c99229c75e2"
+
+  DEFAULT_MEMORY_LIMIT: "768Mi"
+  DEFAULT_READINESS_INITIAL_DELAY: "30"
+  DEFAULT_LIVENESS_INITIAL_DELAY: "90"
+  DEFAULT_PROBE_TIMEOUT: "5"
