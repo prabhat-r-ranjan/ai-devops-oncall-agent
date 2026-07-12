@@ -22,7 +22,7 @@ spec:
 
       containers:
         - name: ai-devops-oncall-agent
-          image: prabhatcr001.azurecr.io/ai-devops-oncall-agent:ea4d3cef7359ad68e1bc83dc80fdb67fff2a8f51
+          image: prabhatcr001.azurecr.io/ai-devops-oncall-agent:9b7fc562e8a604ca70ee88d6324e1360d2a56381
           imagePullPolicy: Always
 
           ports:
