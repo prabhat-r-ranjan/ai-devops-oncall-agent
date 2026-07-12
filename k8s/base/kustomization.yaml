@@ -7,3 +7,4 @@ resources:
   - ai-devops-oncall-agent-rolebinding.yaml
   - ai-devops-oncall-agent-deployment.yaml
   - ai-devops-oncall-agent-service.yaml
+  - ai-devops-oncall-agent-configmap.yaml
