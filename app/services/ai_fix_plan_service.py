@@ -16,7 +16,18 @@ class AiFixPlanService:
     def __init__(self):
         self.api_key = os.getenv("OPENAI_API_KEY")
         self.model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini")
-        self.client = OpenAI(api_key=self.api_key) if self.api_key else None
+        
+        # ✅ FIX: Better error handling
+        if self.api_key:
+            try:
+                self.client = OpenAI(api_key=self.api_key)
+                print("✅ AiFixPlanService initialized")
+            except Exception as e:
+                print(f"⚠️ AiFixPlanService init failed: {e}")
+                self.client = None
+        else:
+            self.client = None
+            print("⚠️ AiFixPlanService disabled (no API key)")
 
     def generate_fix_plan(
         self,
@@ -29,21 +40,31 @@ class AiFixPlanService:
             return self._fallback("OPENAI_API_KEY is not configured.")
 
         try:
-            response = self.client.responses.create(
+            # ✅ FIX: chat.completions.create (not responses.create)
+            response = self.client.chat.completions.create(
                 model=self.model,
-                input=self._build_prompt(
-                    request=request,
-                    diagnostics=diagnostics,
-                    rca_result=rca_result,
-                    rule_based_fix_plan=rule_based_fix_plan,
-                ),
+                messages=[
+                    {"role": "system", "content": "You are a senior Kubernetes DevOps engineer. Return only valid JSON. No markdown."},
+                    {"role": "user", "content": self._build_prompt(
+                        request=request,
+                        diagnostics=diagnostics,
+                        rca_result=rca_result,
+                        rule_based_fix_plan=rule_based_fix_plan,
+                    )}
+                ],
                 temperature=0.1,
+                response_format={"type": "json_object"}  # ✅ Force JSON response
             )
 
-            ai_fix_plan = json.loads(response.output_text)
+            # ✅ Parse response
+            ai_fix_plan = json.loads(response.choices[0].message.content)
             return self._validate(ai_fix_plan, rule_based_fix_plan)
 
+        except json.JSONDecodeError as e:
+            print(f"⚠️ JSON Parse Error: {e}")
+            return self._fallback(f"AI response was not valid JSON: {str(e)}")
         except Exception as e:
+            print(f"⚠️ AI FixPlan generation failed: {e}")
             return self._fallback(f"AI FixPlan generation failed: {str(e)}")
 
     def _build_prompt(
