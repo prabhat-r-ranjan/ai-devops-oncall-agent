@@ -144,10 +144,10 @@ class GitAnalyzer:
             target_file="k8s/base/backend-deployment.yaml",
             change_type="UPDATE_IMAGE_TAG",
             reason="Deployment is using an invalid or unavailable container image tag.",
-            confidence=95,
+            confidence=40,
             evidence=self._extract_evidence(rca_result),
             recommended_changes={
-                "field": "containers[].image",
+                "field": "spec.template.spec.containers[0].image",
                 "action": "Replace invalid image tag with a valid image tag.",
             },
         )
