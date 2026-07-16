@@ -36,7 +36,8 @@ class KubernetesClient:
                 name=deployment_name,
                 namespace=namespace
             )
-
+            containers = deployment.spec.template.spec.containers or []
+            live_image = containers[0].image if containers else None
             pods = self._get_pods_for_deployment(namespace, deployment)
             events = self._get_recent_events(namespace)
             logs = self._get_recent_logs(namespace, pods)
@@ -44,6 +45,7 @@ class KubernetesClient:
             return {
                 "namespace": namespace,
                 "deployment_name": deployment_name,
+                "live_image": live_image,
                 "deployment_status": {
                     "replicas": deployment.status.replicas or 0,
                     "ready_replicas": deployment.status.ready_replicas or 0,

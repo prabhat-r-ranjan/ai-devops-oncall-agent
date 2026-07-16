@@ -10,6 +10,8 @@ It only checks whether the planned fix location exists.
 
 from typing import Any, Dict
 
+import yaml
+
 from app.clients.github_client import GitHubClient
 
 
@@ -52,6 +54,11 @@ class RepositoryAnalysisService:
 
         file_content = file_result.get("content", "")
 
+        git_image = self._extract_container_image(
+            file_content=file_content,
+            deployment_name=fix_plan.get("deployment_name"),
+        )
+
         return {
             "enabled": True,
             "status": "TARGET_FILE_FOUND",
@@ -61,4 +68,37 @@ class RepositoryAnalysisService:
             "file_sha": file_result.get("sha"),
             "content": file_content,
             "preview": file_content[:500],
+            "git_image": git_image,
         }
+
+    def _extract_container_image(
+        self,
+        file_content: str,
+        deployment_name: str | None = None,
+    ) -> str | None:
+        """
+        Extract the container image from the Kubernetes Deployment manifest.
+        """
+
+        try:
+            manifest = yaml.safe_load(file_content)
+
+            containers = (
+                manifest.get("spec", {})
+                .get("template", {})
+                .get("spec", {})
+                .get("containers", [])
+            )
+
+            if not containers:
+                return None
+
+            if deployment_name:
+                for container in containers:
+                    if container.get("name") == deployment_name:
+                        return container.get("image")
+
+            return containers[0].get("image")
+
+        except Exception:
+            return None
