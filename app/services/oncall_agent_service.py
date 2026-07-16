@@ -204,6 +204,11 @@ class OnCallAgentService:
                     "differs from the Git desired image. Restore the "
                     "Git-defined image; a pull request is not required."
                 ),
+                "recommended_changes": {
+                    "field": "spec.template.spec.containers[0].image",
+                    "action": "Restore the live deployment to the Git desired image",
+                    "details": git_image,
+                },
                 "confidence": 98,
             })
 
