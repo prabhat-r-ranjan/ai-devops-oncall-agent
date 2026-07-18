@@ -152,7 +152,6 @@ class GitAnalyzer:
                 "old_value": "nginx:wrong-version",
                 "new_value": "nginx:latest",
             },
-            deployment_name="demo-imagepull",  # ✅ ADD THIS LINE
         )
 
     def _probe_fix(self, rca_result: dict) -> FixPlan:
