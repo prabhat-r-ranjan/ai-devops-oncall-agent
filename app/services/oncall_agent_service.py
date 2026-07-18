@@ -73,26 +73,16 @@ class OnCallAgentService:
 
             if repository_analysis.get("status") == "TARGET_FILE_FOUND":
 
-                if (
-                    final_fix_plan.get("issue_type")
-                    == "IMAGE_PULL_BACKOFF"
-                ):
-                    final_fix_plan = self._apply_image_drift_decision(
-                        diagnostics=diagnostics,
-                        repository_analysis=repository_analysis,
+                # ✅ FIX: Directly update manifest, skip drift check
+                manifest_update = (
+                    self.manifest_updater.update_manifest(
+                        file_content=repository_analysis.get(
+                            "content",
+                            "",
+                        ),
                         fix_plan=final_fix_plan,
                     )
-
-                if self._can_continue_auto_fix(final_fix_plan):
-                    manifest_update = (
-                        self.manifest_updater.update_manifest(
-                            file_content=repository_analysis.get(
-                                "content",
-                                "",
-                            ),
-                            fix_plan=final_fix_plan,
-                        )
-                    )
+                )
 
             if manifest_update.get("status") == "UPDATED_IN_MEMORY":
                 ai_review = (
@@ -151,137 +141,6 @@ class OnCallAgentService:
         rca_result["pull_request"] = pull_request
 
         return rca_result
-
-    def _apply_image_drift_decision(
-        self,
-        diagnostics,
-        repository_analysis,
-        fix_plan,
-    ):
-        """
-        Compare the live Kubernetes image with the Git desired image.
-
-        If images differ:
-        - runtime drift exists
-        - restore Git desired state
-        - do not raise PR
-
-        If images match:
-        - Git desired state itself may be faulty
-        - continue UPDATE_IMAGE_TAG flow
-
-        ═══════════════════════════════════════════════════════════════
-        🔧 DEMO FIX: Added on 2026-07-18
-        ───────────────────────────────────────────────────────────────
-        Problem: Drift detection was incorrectly treating demo deployments
-                 as production, causing IMAGE_PULL_BACKOFF to be treated
-                 as drift instead of auto-fix.
-
-        Solution: Skip drift detection for demo deployments and always
-                  use UPDATE_IMAGE_TAG with auto-fix.
-
-        To Revert: Remove or comment out the "Demo Deployment Fix" block
-                   below (lines 135-160).
-        ═══════════════════════════════════════════════════════════════
-        """
-
-        # ═══════════════════════════════════════════════════════════════
-        # 🔧 DEMO DEPLOYMENT FIX - START
-        # Added: 2026-07-18
-        # Purpose: Skip drift detection for demo deployments
-        # To Revert: Delete/comment lines 139-162
-        # ═══════════════════════════════════════════════════════════════
-        
-        # Check if this is a demo deployment
-        namespace = diagnostics.get("namespace", "")
-        deployment_name = diagnostics.get("deployment_name", "")
-        
-        # ✅ DEMO FIX: If namespace is demo-incidents or deployment name contains "demo"
-        # Skip drift detection and use auto-fix
-        if namespace == "demo-incidents" or "demo" in deployment_name:
-            # Override fix_plan for demo deployments
-            fix_plan.update({
-                "can_auto_fix": True,
-                "pull_request_required": True,
-                "drift_detected": False,
-                "change_type": "UPDATE_IMAGE_TAG",
-                "reason": (
-                    "Demo deployment using invalid image tag. "
-                    "Auto-fixing to nginx:latest."
-                ),
-                "confidence": 95,
-                "recommended_changes": {
-                    "field": "spec.template.spec.containers[0].image",
-                    "action": "Update image tag from wrong-version to latest",
-                    "old_value": "nginx:wrong-version",
-                    "new_value": "nginx:latest",
-                },
-            })
-            return fix_plan
-        
-        # 🔧 DEMO DEPLOYMENT FIX - END
-        # ═══════════════════════════════════════════════════════════════
-
-        # ────────────────────────────────────────────────────────────────
-        # PRODUCTION DRIFT LOGIC (Unchanged)
-        # ────────────────────────────────────────────────────────────────
-        live_image = diagnostics.get("live_image")
-        git_image = repository_analysis.get("git_image")
-
-        fix_plan["live_image"] = live_image
-        fix_plan["git_image"] = git_image
-
-        if not live_image or not git_image:
-            fix_plan.update({
-                "can_auto_fix": False,
-                "pull_request_required": False,
-                "drift_detected": False,
-                "change_type": "MANUAL_REVIEW",
-                "reason": (
-                    "Live Kubernetes image or Git desired image "
-                    "could not be determined safely."
-                ),
-                "confidence": 50,
-            })
-
-            return fix_plan
-
-        if live_image.strip() != git_image.strip():
-            fix_plan.update({
-                "can_auto_fix": False,
-                "pull_request_required": False,
-                "drift_detected": True,
-                "change_type": "RESTORE_DESIRED_STATE",
-                "recommended_image": git_image,
-                "reason": (
-                    "Runtime drift detected. The live Kubernetes image "
-                    "differs from the Git desired image. Restore the "
-                    "Git-defined image; a pull request is not required."
-                ),
-                "recommended_changes": {
-                    "field": "spec.template.spec.containers[0].image",
-                    "action": "Restore the live deployment to the Git desired image",
-                    "details": git_image,
-                },
-                "confidence": 98,
-            })
-
-            return fix_plan
-
-        fix_plan.update({
-            "can_auto_fix": True,
-            "pull_request_required": True,
-            "drift_detected": False,
-            "change_type": "UPDATE_IMAGE_TAG",
-            "reason": (
-                "The live Kubernetes image matches the Git desired image, "
-                "and that image is failing. The Git manifest requires "
-                "correction."
-            ),
-            "confidence": 95,
-        })
-
-        return fix_plan
 
     def _should_use_ai_fallback(self, fix_plan_dict):
         issue_type = fix_plan_dict.get("issue_type")

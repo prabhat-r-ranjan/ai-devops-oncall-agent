@@ -15,6 +15,6 @@ spec:
     spec:
       containers:
         - name: app
-          image: nginx:wrong-version1
+          image: nginx:wrong-version
           ports:
             - containerPort: 80
