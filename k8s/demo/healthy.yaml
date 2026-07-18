@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-healthy
+  namespace: demo-incidents
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-healthy
+  template:
+    metadata:
+      labels:
+        app: demo-healthy
+    spec:
+      containers:
+        - name: app
+          image: nginx:latest
+          ports:
+            - containerPort: 80

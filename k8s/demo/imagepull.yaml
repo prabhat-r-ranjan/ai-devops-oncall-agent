@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-imagepull
+  namespace: demo-incidents
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-imagepull
+  template:
+    metadata:
+      labels:
+        app: demo-imagepull
+    spec:
+      containers:
+        - name: app
+          image: nginx:wrong-version
+          ports:
+            - containerPort: 80

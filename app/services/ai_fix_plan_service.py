@@ -143,9 +143,11 @@ Rule based FixPlan:
         rule_based_fix_plan: Dict[str, Any],
     ) -> Dict[str, Any]:
         allowed_files = {
-            "k8s/base/backend-deployment.yaml",
-            "k8s/base/frontend-deployment.yaml",
-            "k8s/base/ai-agent-deployment.yaml",
+            # "k8s/base/backend-deployment.yaml",
+            # "k8s/base/frontend-deployment.yaml",
+            # "k8s/base/ai-agent-deployment.yaml",
+            "k8s/demo/imagepull.yaml", # Added for demo
+            "k8s/demo/healthy.yaml"    # Added for demo
         }
 
         allowed_change_types = {

@@ -70,19 +70,84 @@ class ManifestUpdater:
                 "enabled": True,
                 "status": "NO_IMAGE_FOUND",
                 "message": "No image field found in container.",
-            }
-
-        new_image = os.getenv("DEFAULT_BACKEND_IMAGE")
-
-        if not new_image:
-            return {
-                "enabled": True,
-                "status": "VALID_IMAGE_NOT_CONFIGURED",
-                "message": "DEFAULT_BACKEND_IMAGE environment variable is missing.",
-                "old_value": old_image,
                 "field": "containers[].image",
             }
 
+        # ✅ STEP 1: Check if it's a demo ImagePullBackOff case
+        # Detects wrong-version, error, or invalid tags
+        is_demo_image_pull_issue = any([
+            "wrong-version" in old_image,
+            "error" in old_image.lower(),
+            "invalid" in old_image.lower(),
+            "wrong" in old_image.lower(),
+            old_image.endswith(":") or old_image.endswith(":latest") and "wrong" in old_image,
+        ])
+
+        if is_demo_image_pull_issue:
+            # ✅ Demo specific fix: Extract base image name and add :latest
+            # Examples:
+            # nginx:wrong-version → nginx:latest
+            # myapp:error-tag → myapp:latest
+            # app:v1.0-invalid → app:latest
+            base_image = old_image.split(":")[0]
+            new_image = f"{base_image}:latest"
+
+            # Special case: If image is from ACR, preserve registry
+            if "/" in old_image and not old_image.startswith("prabhatcr001.azurecr.io/demo"):
+                # Keep registry prefix if present
+                registry_parts = old_image.split("/")
+                if len(registry_parts) > 1:
+                    # Example: myregistry.azurecr.io/app:wrong → myregistry.azurecr.io/app:latest
+                    registry = "/".join(registry_parts[:-1])
+                    image_name = registry_parts[-1].split(":")[0]
+                    new_image = f"{registry}/{image_name}:latest"
+
+            # Check if already fixed
+            if old_image == new_image:
+                return {
+                    "enabled": True,
+                    "status": "NO_CHANGE_NEEDED",
+                    "message": "Image tag already appears to be correct.",
+                    "field": "containers[].image",
+                    "old_value": old_image,
+                    "new_value": new_image,
+                    "old_image": old_image,
+                    "new_image": new_image,
+                    "updated_content": file_content,
+                }
+
+            # Apply the fix
+            container["image"] = new_image
+
+            return {
+                "enabled": True,
+                "status": "UPDATED_IN_MEMORY",
+                "message": f"Fixed invalid image tag: {old_image} → {new_image}",
+                "field": "containers[].image",
+                "old_value": old_image,
+                "new_value": new_image,
+                "old_image": old_image,
+                "new_image": new_image,
+                "fix_type": "DEMO_IMAGE_PULL_FIX",
+                "updated_content": self._dump(manifest),
+            }
+
+        # ✅ STEP 2: Production fix using environment variable
+        new_image = os.getenv("DEFAULT_BACKEND_IMAGE")
+
+        if not new_image:
+            # ✅ Log the issue but don't fail
+            print(f"⚠️ DEFAULT_BACKEND_IMAGE not set. Using current image: {old_image}")
+            return {
+                "enabled": True,
+                "status": "NO_IMAGE_UPDATE",
+                "message": "DEFAULT_BACKEND_IMAGE environment variable is missing. Keeping current image.",
+                "old_value": old_image,
+                "field": "containers[].image",
+                "updated_content": file_content,
+            }
+
+        # ✅ STEP 3: Check if already up to date
         if old_image == new_image:
             return {
                 "enabled": True,
@@ -96,17 +161,19 @@ class ManifestUpdater:
                 "updated_content": file_content,
             }
 
+        # ✅ STEP 4: Apply production fix
         container["image"] = new_image
 
         return {
             "enabled": True,
             "status": "UPDATED_IN_MEMORY",
-            "message": "Manifest image updated in memory.",
+            "message": f"Updated image: {old_image} → {new_image}",
             "field": "containers[].image",
             "old_value": old_image,
             "new_value": new_image,
             "old_image": old_image,
             "new_image": new_image,
+            "fix_type": "ENV_BASED_IMAGE_UPDATE",
             "updated_content": self._dump(manifest),
         }
 

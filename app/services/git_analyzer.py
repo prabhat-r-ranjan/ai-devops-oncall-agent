@@ -141,14 +141,16 @@ class GitAnalyzer:
         return FixPlan(
             issue_type="IMAGE_PULL_BACKOFF",
             can_auto_fix=True,
-            target_file="k8s/base/backend-deployment.yaml",
+            target_file="k8s/demo/imagepull.yaml",
             change_type="UPDATE_IMAGE_TAG",
             reason="Deployment is using an invalid or unavailable container image tag.",
-            confidence=40,
+            confidence=85,
             evidence=self._extract_evidence(rca_result),
             recommended_changes={
                 "field": "spec.template.spec.containers[0].image",
                 "action": "Replace invalid image tag with a valid image tag.",
+                "old_value": "nginx:wrong-version",
+                "new_value": "nginx:latest",
             },
         )
 
