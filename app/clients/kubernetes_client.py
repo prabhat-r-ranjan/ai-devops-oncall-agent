@@ -39,7 +39,7 @@ class KubernetesClient:
             containers = deployment.spec.template.spec.containers or []
             live_image = containers[0].image if containers else None
             pods = self._get_pods_for_deployment(namespace, deployment)
-            events = self._get_recent_events(namespace)
+            events = self._get_recent_events(namespace, deployment_name)
             logs = self._get_recent_logs(namespace, pods)
 
             return {
@@ -128,11 +128,18 @@ class KubernetesClient:
 
         return pods
 
-    def _get_recent_events(self, namespace: str) -> list:
+    def _get_recent_events(self, namespace: str, deployment_name: str) -> list:
         event_list = self.core_api.list_namespaced_event(namespace=namespace)
 
+        # Filter events by deployment_name
+        filtered_events = []
+        for event in event_list.items:
+            involved_obj = event.involved_object
+            if involved_obj.name == deployment_name or involved_obj.name.startswith(deployment_name + "-"):
+                filtered_events.append(event)
+
         sorted_events = sorted(
-            event_list.items,
+            filtered_events,
             key=lambda event: (
                 event.last_timestamp
                 or event.event_time
