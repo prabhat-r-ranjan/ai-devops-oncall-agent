@@ -117,11 +117,33 @@ class KubernetesClient:
                 else False
             )
 
+            # ✅ Build container_statuses list with state info
+            container_statuses_list = []
+            for cs in container_statuses:
+                cs_dict = {
+                    "name": cs.name,
+                    "ready": cs.ready,
+                    "restart_count": cs.restart_count,
+                    "state": {}
+                }
+                if cs.state:
+                    if cs.state.terminated:
+                        cs_dict["state"]["terminated"] = {
+                            "reason": cs.state.terminated.reason,
+                            "exit_code": cs.state.terminated.exit_code,
+                        }
+                    if cs.state.waiting:
+                        cs_dict["state"]["waiting"] = {
+                            "reason": cs.state.waiting.reason,
+                        }
+                container_statuses_list.append(cs_dict)
+
             pods.append({
                 "name": pod.metadata.name,
                 "phase": pod.status.phase,
                 "ready": ready,
                 "restart_count": restart_count,
+                "container_statuses": container_statuses_list,  # ✅ ADDED
                 "node_name": pod.spec.node_name,
                 "pod_ip": pod.status.pod_ip
             })
