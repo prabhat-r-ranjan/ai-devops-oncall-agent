@@ -106,16 +106,16 @@ class KubernetesIssueDetector:
         """
         Detect pods with high restart count.
         """
+        # ✅ Skip if OOMKilled already detected
+        if self._is_oom_killed_detected(diagnostics):
+            return []
+
         issues = []
         pods = diagnostics.get("pods") or []
 
         for pod in pods:
             name = pod.get("name", "unknown-pod")
             restart_count = pod.get("restart_count") or 0
-
-            # ✅ Skip if OOMKilled already detected
-            if self._is_oom_killed_detected(diagnostics):
-                return []
 
             if restart_count >= 5:
                 issues.append(
@@ -167,7 +167,10 @@ class KubernetesIssueDetector:
         """
         Detect OOMKilled from events and application logs.
         """
-        issues = self._detect_from_events(
+        issues = []
+
+        # ✅ Check events for OOMKilled
+        issues.extend(self._detect_from_events(
             diagnostics,
             issue_type="OOM_KILLED",
             severity="CRITICAL",
@@ -178,13 +181,14 @@ class KubernetesIssueDetector:
                 "Increase memory limit if needed.",
                 "Investigate memory leaks or high heap usage.",
             ],
-        )
+        ))
 
-        # ✅ ALSO CHECK POD STATUS FOR OOMKilled (NEW)
+        # ✅ Check pod container status for OOMKilled (HIGHEST PRIORITY)
         pods = diagnostics.get("pods") or []
         for pod in pods:
             container_statuses = pod.get("container_statuses") or []
             for status in container_statuses:
+                # Check terminated state
                 state = status.get("state") or {}
                 terminated = state.get("terminated") or {}
                 if terminated.get("reason") == "OOMKilled":
@@ -192,8 +196,8 @@ class KubernetesIssueDetector:
                         DetectedIssue(
                             issue_type="OOM_KILLED",
                             severity="CRITICAL",
-                            score=99,  # ✅ Highest priority
-                            evidence=[f"Pod {pod.get('name')} OOMKilled due to memory limit"],
+                            score=100,  # Highest priority
+                            evidence=[f"Pod {pod.get('name')} was OOMKilled due to memory limit"],
                             actions=[
                                 "Check container memory limit and actual memory usage.",
                                 "Increase memory limit if needed.",
@@ -202,6 +206,7 @@ class KubernetesIssueDetector:
                         )
                     )
 
+        # ✅ Check logs for OOMKilled
         logs_text = self._application_logs_as_text(diagnostics).lower()
 
         if "outofmemoryerror" in logs_text or "java heap space" in logs_text:
@@ -389,6 +394,13 @@ class KubernetesIssueDetector:
         """
         Check if OOMKilled already detected in diagnostics.
         """
+        # ✅ Check events
+        events = diagnostics.get("events") or []
+        for event in events:
+            if "OOMKilled" in event.get("message", "") or "OOMKilled" in event.get("reason", ""):
+                return True
+
+        # ✅ Check pod container status
         pods = diagnostics.get("pods") or []
         for pod in pods:
             container_statuses = pod.get("container_statuses") or []
@@ -397,11 +409,7 @@ class KubernetesIssueDetector:
                 terminated = state.get("terminated") or {}
                 if terminated.get("reason") == "OOMKilled":
                     return True
-                
-                # Also check waiting state for OOMKilled
-                waiting = state.get("waiting") or {}
-                if waiting.get("reason") == "OOMKilled":
-                    return True
+
         return False
 
     def _detect_from_events(
