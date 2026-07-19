@@ -19,9 +19,8 @@ class KubernetesIssueDetector:
 
         issues.extend(self._check_deployment_health(diagnostics))
         issues.extend(self._check_pod_health(diagnostics))
-        issues.extend(self._check_restart_count(diagnostics))
         issues.extend(self._check_oom_killed(diagnostics))
-        #issues.extend(self._check_crash_loop_backoff(diagnostics))
+        issues.extend(self._check_restart_count(diagnostics))
         issues.extend(self._check_image_pull_backoff(diagnostics))
         issues.extend(self._check_probe_failures(diagnostics))
         issues.extend(self._check_scheduling_failures(diagnostics))
@@ -114,6 +113,10 @@ class KubernetesIssueDetector:
             name = pod.get("name", "unknown-pod")
             restart_count = pod.get("restart_count") or 0
 
+            # ✅ Skip if OOMKilled already detected
+            if self._is_oom_killed_detected(diagnostics):
+                return []
+
             if restart_count >= 5:
                 issues.append(
                     DetectedIssue(
@@ -142,23 +145,6 @@ class KubernetesIssueDetector:
                 )
 
         return issues
-
-    def _check_crash_loop_backoff(self, diagnostics: Dict[str, Any]) -> List[DetectedIssue]:
-        """
-        Detect CrashLoopBackOff from Kubernetes events.
-        """
-        return self._detect_from_events(
-            diagnostics,
-            issue_type="CRASH_LOOP_BACKOFF",
-            severity="CRITICAL",
-            score=92,
-            keywords=["CrashLoopBackOff", "Back-off restarting failed container"],
-            actions=[
-                "Check application startup logs.",
-                "Run kubectl logs <pod-name> --previous.",
-                "Verify environment variables, secrets, config maps, and application dependencies.",
-            ],
-        )
 
     def _check_image_pull_backoff(self, diagnostics: Dict[str, Any]) -> List[DetectedIssue]:
         """
@@ -194,6 +180,28 @@ class KubernetesIssueDetector:
             ],
         )
 
+        # ✅ ALSO CHECK POD STATUS FOR OOMKilled (NEW)
+        pods = diagnostics.get("pods") or []
+        for pod in pods:
+            container_statuses = pod.get("container_statuses") or []
+            for status in container_statuses:
+                state = status.get("state") or {}
+                terminated = state.get("terminated") or {}
+                if terminated.get("reason") == "OOMKilled":
+                    issues.append(
+                        DetectedIssue(
+                            issue_type="OOM_KILLED",
+                            severity="CRITICAL",
+                            score=99,  # ✅ Highest priority
+                            evidence=[f"Pod {pod.get('name')} OOMKilled due to memory limit"],
+                            actions=[
+                                "Check container memory limit and actual memory usage.",
+                                "Increase memory limit if needed.",
+                                "Investigate memory leaks or high heap usage.",
+                            ],
+                        )
+                    )
+
         logs_text = self._application_logs_as_text(diagnostics).lower()
 
         if "outofmemoryerror" in logs_text or "java heap space" in logs_text:
@@ -201,7 +209,7 @@ class KubernetesIssueDetector:
                 DetectedIssue(
                     issue_type="OOM_KILLED",
                     severity="CRITICAL",
-                    score=90,
+                    score=95,
                     evidence=["Application logs contain Java memory error keywords."],
                     actions=[
                         "Review JVM heap settings.",
@@ -376,6 +384,25 @@ class KubernetesIssueDetector:
             ]
 
         return []
+
+    def _is_oom_killed_detected(self, diagnostics: Dict[str, Any]) -> bool:
+        """
+        Check if OOMKilled already detected in diagnostics.
+        """
+        pods = diagnostics.get("pods") or []
+        for pod in pods:
+            container_statuses = pod.get("container_statuses") or []
+            for status in container_statuses:
+                state = status.get("state") or {}
+                terminated = state.get("terminated") or {}
+                if terminated.get("reason") == "OOMKilled":
+                    return True
+                
+                # Also check waiting state for OOMKilled
+                waiting = state.get("waiting") or {}
+                if waiting.get("reason") == "OOMKilled":
+                    return True
+        return False
 
     def _detect_from_events(
         self,
