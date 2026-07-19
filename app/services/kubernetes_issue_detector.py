@@ -21,7 +21,7 @@ class KubernetesIssueDetector:
         issues.extend(self._check_pod_health(diagnostics))
         issues.extend(self._check_restart_count(diagnostics))
         issues.extend(self._check_oom_killed(diagnostics))
-        issues.extend(self._check_crash_loop_backoff(diagnostics))
+        #issues.extend(self._check_crash_loop_backoff(diagnostics))
         issues.extend(self._check_image_pull_backoff(diagnostics))
         issues.extend(self._check_probe_failures(diagnostics))
         issues.extend(self._check_scheduling_failures(diagnostics))
