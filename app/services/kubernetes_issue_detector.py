@@ -151,7 +151,7 @@ class KubernetesIssueDetector:
             diagnostics,
             issue_type="CRASH_LOOP_BACKOFF",
             severity="CRITICAL",
-            score=95,
+            score=92,
             keywords=["CrashLoopBackOff", "Back-off restarting failed container"],
             actions=[
                 "Check application startup logs.",
@@ -185,7 +185,7 @@ class KubernetesIssueDetector:
             diagnostics,
             issue_type="OOM_KILLED",
             severity="CRITICAL",
-            score=90,
+            score=97,
             keywords=["OOMKilled", "memory limit", "out of memory"],
             actions=[
                 "Check container memory limit and actual memory usage.",

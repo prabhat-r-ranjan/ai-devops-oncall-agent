@@ -188,6 +188,10 @@ class RuleBasedRcaEngine:
             if issue.issue_type not in stale_issue_types
         ]
 
+    """
+        Prioritize detected issues based on confidence score.
+        Note: Score shows detection confidence, not always the actual root cause.
+    """
     def _prioritize_issues(self, issues: List[DetectedIssue]) -> List[DetectedIssue]:
         """
         Sort issues by score, highest first.
