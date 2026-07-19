@@ -153,7 +153,7 @@ class KubernetesIssueDetector:
             severity="CRITICAL",
             score=95,
             keywords=["CrashLoopBackOff", "Back-off restarting failed container"],
-            actions=[-
+            actions=[
                 "Check application startup logs.",
                 "Run kubectl logs <pod-name> --previous.",
                 "Verify environment variables, secrets, config maps, and application dependencies.",
