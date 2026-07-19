@@ -106,16 +106,17 @@ class KubernetesIssueDetector:
         """
         Detect pods with high restart count.
         """
-        # ✅ Skip if OOMKilled already detected
-        if self._is_oom_killed_detected(diagnostics):
-            return []
-
         issues = []
         pods = diagnostics.get("pods") or []
 
         for pod in pods:
             name = pod.get("name", "unknown-pod")
             restart_count = pod.get("restart_count") or 0
+            phase = pod.get("phase")
+
+            # ✅ OOMKilled detection - Running pod with high restarts
+            if phase == "Running" and restart_count >= 5:
+                return []  # Skip HIGH_RESTART_COUNT, OOMKilled will be detected
 
             if restart_count >= 5:
                 issues.append(
@@ -389,28 +390,6 @@ class KubernetesIssueDetector:
             ]
 
         return []
-
-    def _is_oom_killed_detected(self, diagnostics: Dict[str, Any]) -> bool:
-        """
-        Check if OOMKilled already detected in diagnostics.
-        """
-        # ✅ Check events
-        events = diagnostics.get("events") or []
-        for event in events:
-            if "OOMKilled" in event.get("message", "") or "OOMKilled" in event.get("reason", ""):
-                return True
-
-        # ✅ Check pod container status
-        pods = diagnostics.get("pods") or []
-        for pod in pods:
-            container_statuses = pod.get("container_statuses") or []
-            for status in container_statuses:
-                state = status.get("state") or {}
-                terminated = state.get("terminated") or {}
-                if terminated.get("reason") == "OOMKilled":
-                    return True
-
-        return False
 
     def _detect_from_events(
         self,
