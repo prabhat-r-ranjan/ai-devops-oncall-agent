@@ -148,6 +148,7 @@ Rule based FixPlan:
             # "k8s/base/ai-agent-deployment.yaml",
             "k8s/demo/imagepull.yaml", # Added for demo
             "k8s/demo/healthy.yaml"    # Added for demo
+            "k8s/demo/ai-oom.yaml",    #Added for demo
         }
 
         allowed_change_types = {
