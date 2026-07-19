@@ -186,7 +186,7 @@ class GitAnalyzer:
         return FixPlan(
             issue_type="OOM_KILLED",
             can_auto_fix=True,
-            target_file="k8s/base/backend-deployment.yaml",
+            target_file="k8s/demo/ai-oom.yaml",
             change_type="UPDATE_MEMORY_LIMIT",
             reason="Container appears to be exceeding its configured memory limit.",
             confidence=88,
@@ -194,6 +194,8 @@ class GitAnalyzer:
             recommended_changes={
                 "field": "resources.limits.memory",
                 "action": "Increase memory limit after validating usage pattern.",
+                "old_value": "50Mi",
+                "new_value": "200Mi",
             },
         )
 
